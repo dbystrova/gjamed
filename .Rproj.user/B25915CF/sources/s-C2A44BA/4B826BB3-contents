@@ -1,0 +1,100 @@
+
+
+library(gjamedit)
+f <- gjamSimData(n = 500, S = 10, Q = 4, typeNames = 'CA')
+summary(f)
+
+par(bty = 'n', mfrow = c(1,2), family='')
+h <- hist(c(-1,f$y),nclass = 50,plot = F)
+plot(h$counts,h$mids,type = 's')
+plot(f$w,f$y,cex = .2)
+
+ml  <- list(ng = 1000, burnin = 100, typeNames = f$typeNames)
+out <- gjam(f$formula, f$xdata, f$ydata, modelList = ml)
+summary(out)
+
+
+
+library(repmis)
+d <- "https://github.com/jimclarkatduke/gjam/blob/master/forestTraits.RData?raw=True"
+source_data(d)
+xdata <- forestTraits$xdata[,c(1,2,8)]
+
+y  <- gjamReZero(forestTraits$treesDeZero)  # extract y
+treeYdata  <- gjamTrimY(y,10)$y             # at least 10 plots
+dim(treeYdata)
+treeYdata[1:5,1:6]
+
+rl   <- list(r = 8, N = 40)
+ml   <- list(ng = 2500, burnin = 500, typeNames = 'DA', reductList = rl)
+form <- as.formula( ~ temp*deficit + I(temp^2) + I(deficit^2) )
+out  <- gjam(form, xdata = xdata, ydata = treeYdata, modelList = ml)
+
+
+
+specNames <- colnames(treeYdata)
+specColor <- rep('black',ncol(treeYdata))
+specColor[ c(grep('quer',specNames),grep('cary',specNames)) ] <- 'brown'
+specColor[ c(grep('acer',specNames),grep('frax',specNames)) ] <- 'darkgreen'
+specColor[ c(grep('abie',specNames),grep('pice',specNames)) ] <- 'blue'
+
+pl   <- list(GRIDPLOTS=T, specColor = specColor)
+gjamPlot(output = out, plotPars = pl)
+
+x<- apply(out$chains$kgibbs,1,unique)
+y<-lapply(x,length)
+length(unique(out$chains$kgibbs[2000,]))
+
+par(mfrow=c(1,3),oma = c(1, 1, 1, 1))
+corrplot(cor(treeYdata), diag = FALSE, order = "FPC",tl.pos = "ld", tl.cex = 0.5, method = "color", type = "lower")
+title("Correlation cor(Y)")
+corrplot(out$parameters$corMu, diag = FALSE, order = "FPC",tl.pos = "ld", tl.cex = 0.5, method = "color", type = "lower")
+title("R")
+corrplot(out$parameters$ematrix, diag = FALSE, order = "FPC",tl.pos = "ld", tl.cex = 0.5, method = "color", type = "lower")
+title("E matrix")
+#corrplot(Tau_n, diag = FALSE, order = "FPC",tl.pos = "ld", tl.cex = 0.5, method = "color", type = "lower")
+#title("Tau")
+
+########################################################"
+
+dissimilarity <- 1 - cor(out$parameters$corMu)
+distance <- as.dist(dissimilarity) 
+
+
+plot(hclust(distance),
+     main="Dissimilarity = 1 - Correlation", xlab="")
+
+########################################################"
+
+dissimilarity2 <- (1 - cor(out$parameters$corMu))/2
+distance2 <- as.dist(dissimilarity2) 
+
+
+plot(hclust(distance2),
+     main="Dissimilarity = (1 - Correlation)/2", xlab="")
+
+
+########################################################"
+
+dissimilarity3 <- 1 - abs(cor(out$parameters$corMu))
+distance3 <- as.dist(dissimilarity3) 
+
+
+plot(hclust(distance3),
+     main="Dissimilarity = 1 - abs(Correlation)", xlab="")
+
+
+########################################################"
+
+dissimilarity4 <- 1 - abs(cor(out$parameters$corMu))
+distance4 <- as.dist(dissimilarity4) 
+
+
+plot(hclust(distance4),
+     main="Dissimilarity = sqrt(1 - (Correlation)^2)", xlab="")
+
+
+
+
+
+

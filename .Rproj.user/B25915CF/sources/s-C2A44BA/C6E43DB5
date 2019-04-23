@@ -1,0 +1,23 @@
+{
+    "collab_server" : "",
+    "contents" : "",
+    "created" : 1556015212871.000,
+    "dirty" : false,
+    "encoding" : "UTF-8",
+    "folds" : "",
+    "hash" : "0",
+    "id" : "C6E43DB5",
+    "lastKnownWriteTime" : 1555332626,
+    "last_content_update" : 1556015296966,
+    "path" : "~/Bureau/Ecology-models-master/simcoms-master/jsdm_test_2.Rmd",
+    "project_path" : null,
+    "properties" : {
+        "cursorPosition" : "19,17",
+        "last_setup_crc32" : "C2A44BA216d632b",
+        "scrollLine" : "0"
+    },
+    "relative_order" : 3,
+    "source_on_save" : false,
+    "source_window" : "",
+    "type" : "r_markdown"
+}

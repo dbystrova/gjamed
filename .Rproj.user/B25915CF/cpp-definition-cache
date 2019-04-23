@@ -1,0 +1,149 @@
+[
+    {
+        "definitions" : [
+            {
+                "column" : 12,
+                "file" : "/home/dbystrov/Documents/Rpack/gjamedit/src/cppFns.cpp",
+                "kind" : 6,
+                "line" : 9,
+                "name" : "byRcpp(const int, const arma::mat, arma::mat, arma::mat, arma::mat, arma::mat)",
+                "parent_name" : "",
+                "usr" : "c:@F@byRcpp#1I#1$@N@arma@C@Mat>#d#S0_#S0_#S0_#S0_#"
+            },
+            {
+                "column" : 12,
+                "file" : "/home/dbystrov/Documents/Rpack/gjamedit/src/cppFns.cpp",
+                "kind" : 6,
+                "line" : 42,
+                "name" : "condMVNRcpp(const arma::uvec, const arma::uvec, const arma::mat, arma::mat, const arma::mat)",
+                "parent_name" : "",
+                "usr" : "c:@F@condMVNRcpp#1$@N@arma@C@Col>#i#1S0_#1$@N@arma@C@Mat>#d#S1_#1S1_#"
+            },
+            {
+                "column" : 8,
+                "file" : "/home/dbystrov/Documents/Rpack/gjamedit/src/cppFns.cpp",
+                "kind" : 6,
+                "line" : 59,
+                "name" : "tnormRcpp(double, double, double, double)",
+                "parent_name" : "",
+                "usr" : "c:@F@tnormRcpp#d#d#d#d#"
+            },
+            {
+                "column" : 11,
+                "file" : "/home/dbystrov/Documents/Rpack/gjamedit/src/cppFns.cpp",
+                "kind" : 6,
+                "line" : 81,
+                "name" : "trMVNmatrixRcpp(arma::mat, arma::mat, arma::mat, arma::mat, arma::mat, arma::uvec, arma::uvec)",
+                "parent_name" : "",
+                "usr" : "c:@F@trMVNmatrixRcpp#$@N@arma@C@Mat>#d#S0_#S0_#S0_#S0_#$@N@arma@C@Col>#i#S1_#"
+            },
+            {
+                "column" : 11,
+                "file" : "/home/dbystrov/Documents/Rpack/gjamedit/src/cppFns.cpp",
+                "kind" : 6,
+                "line" : 141,
+                "name" : "rmvnormRcpp(int, arma::vec, arma::mat)",
+                "parent_name" : "",
+                "usr" : "c:@F@rmvnormRcpp#I#$@N@arma@C@Col>#d#$@N@arma@C@Mat>#d#"
+            },
+            {
+                "column" : 11,
+                "file" : "/home/dbystrov/Documents/Rpack/gjamedit/src/cppFns.cpp",
+                "kind" : 6,
+                "line" : 172,
+                "name" : "solveRcpp(arma::mat)",
+                "parent_name" : "",
+                "usr" : "c:@F@solveRcpp#$@N@arma@C@Mat>#d#"
+            },
+            {
+                "column" : 11,
+                "file" : "/home/dbystrov/Documents/Rpack/gjamedit/src/cppFns.cpp",
+                "kind" : 6,
+                "line" : 180,
+                "name" : "getPmatKRcpp(arma::vec, arma::mat, arma::mat, arma::mat, arma::mat, arma::mat, double)",
+                "parent_name" : "",
+                "usr" : "c:@F@getPmatKRcpp#$@N@arma@C@Col>#d#$@N@arma@C@Mat>#d#S1_#S1_#S1_#S1_#d#"
+            },
+            {
+                "column" : 11,
+                "file" : "/home/dbystrov/Documents/Rpack/gjamedit/src/cppFns.cpp",
+                "kind" : 6,
+                "line" : 220,
+                "name" : "fnZRcpp(arma::vec, arma::mat, arma::mat, arma::mat, arma::mat, arma::mat, double, int)",
+                "parent_name" : "",
+                "usr" : "c:@F@fnZRcpp#$@N@arma@C@Col>#d#$@N@arma@C@Mat>#d#S1_#S1_#S1_#S1_#d#I#"
+            },
+            {
+                "column" : 11,
+                "file" : "/home/dbystrov/Documents/Rpack/gjamedit/src/cppFns.cpp",
+                "kind" : 6,
+                "line" : 290,
+                "name" : "invWbyRcpp(double, arma::mat)",
+                "parent_name" : "",
+                "usr" : "c:@F@invWbyRcpp#d#$@N@arma@C@Mat>#d#"
+            },
+            {
+                "column" : 11,
+                "file" : "/home/dbystrov/Documents/Rpack/gjamedit/src/cppFns.cpp",
+                "kind" : 6,
+                "line" : 303,
+                "name" : "dmvnormRcpp(arma::mat, arma::mat, arma::mat, bool)",
+                "parent_name" : "",
+                "usr" : "c:@F@dmvnormRcpp#$@N@arma@C@Mat>#d#S0_#S0_#b#"
+            },
+            {
+                "column" : 11,
+                "file" : "/home/dbystrov/Documents/Rpack/gjamedit/src/cppFns.cpp",
+                "kind" : 6,
+                "line" : 327,
+                "name" : "randEffRcpp(arma::mat, arma::vec, arma::mat, arma::mat)",
+                "parent_name" : "",
+                "usr" : "c:@F@randEffRcpp#$@N@arma@C@Mat>#d#$@N@arma@C@Col>#d#S0_#S0_#"
+            }
+        ],
+        "file" : "/home/dbystrov/Documents/Rpack/gjamedit/src/cppFns.cpp",
+        "file_last_write" : 1555518580
+    },
+    {
+        "definitions" : [
+            {
+                "column" : 11,
+                "file" : "/home/dbystrov/Documents/Rpack/gjamedit/src/rcpparma_hello_world.cpp",
+                "kind" : 6,
+                "line" : 18,
+                "name" : "rcpparma_hello_world",
+                "parent_name" : "",
+                "usr" : "c:@F@rcpparma_hello_world#"
+            },
+            {
+                "column" : 11,
+                "file" : "/home/dbystrov/Documents/Rpack/gjamedit/src/rcpparma_hello_world.cpp",
+                "kind" : 6,
+                "line" : 30,
+                "name" : "rcpparma_outerproduct(const arma::colvec &)",
+                "parent_name" : "",
+                "usr" : "c:@F@rcpparma_outerproduct#&1$@N@arma@C@Col>#d#"
+            },
+            {
+                "column" : 8,
+                "file" : "/home/dbystrov/Documents/Rpack/gjamedit/src/rcpparma_hello_world.cpp",
+                "kind" : 6,
+                "line" : 38,
+                "name" : "rcpparma_innerproduct(const arma::colvec &)",
+                "parent_name" : "",
+                "usr" : "c:@F@rcpparma_innerproduct#&1$@N@arma@C@Col>#d#"
+            },
+            {
+                "column" : 12,
+                "file" : "/home/dbystrov/Documents/Rpack/gjamedit/src/rcpparma_hello_world.cpp",
+                "kind" : 6,
+                "line" : 47,
+                "name" : "rcpparma_bothproducts(const arma::colvec &)",
+                "parent_name" : "",
+                "usr" : "c:@F@rcpparma_bothproducts#&1$@N@arma@C@Col>#d#"
+            }
+        ],
+        "file" : "/home/dbystrov/Documents/Rpack/gjamedit/src/rcpparma_hello_world.cpp",
+        "file_last_write" : 1556003884
+    }
+]

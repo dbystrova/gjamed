@@ -1,0 +1,19 @@
+"0","library(magrittr)
+library(purrr)
+library(readr)
+library(corrplot)
+"
+"2","corrplot 0.84 loaded
+"
+"2","
+Attachement du package : ‘corrplot’
+
+"
+"2","The following object is masked from ‘package:arm’:
+
+    corrplot
+
+"
+"0","library(gjam)"
+"2","Error in library(gjam) : aucun package nommé ‘gjam’ n'est trouvé
+"
