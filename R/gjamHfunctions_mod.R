@@ -12815,7 +12815,7 @@ columnPaste <- function(c1, c2, sep='-'){
   c12
 }
 
-metrop <- function(theta, #previous iteration alpha.DP
+metrop_DP <- function(theta, #previous iteration alpha.DP
                    pvec,
                    lik.fun,
                    #prior.fun,
@@ -12824,12 +12824,15 @@ metrop <- function(theta, #previous iteration alpha.DP
                    ) {
   accept<-FALSE
   ndim <- length(theta)
-  last.lik<-lik.fun(theta,pvec,N,shape,rate)
+  last.lik<-lik.fun(alpha=theta,pvec=pvec,N=N,shape=shape,rate=rate)
   last=theta
   proposal <-.tnorm(1,lo=0,hi=Inf,mu=theta,sig=V)
-  #proposal.prior <- prior.fun(proposal,...)
+  proposal.prior <-  log(dtruncnorm(last,a=0,b=Inf,mean=proposal,sd=V)) #q(x,y)
+  last.prior <-  log(dtruncnorm(proposal,a=0,b=Inf,mean=last,sd=V)) #q(y,x)
+  
+  inv.prior<-
   proposal.lik <- lik.fun(proposal,pvec,N,shape,rate)
-  alpha <- exp(proposal.lik-last.lik)
+  alpha <- exp(proposal.lik+proposal.prior-last.lik-last.prior)
   if (alpha > runif(1)) accept <- TRUE
   if (accept) {
       last <- proposal
@@ -12837,3 +12840,50 @@ metrop <- function(theta, #previous iteration alpha.DP
   return(last)
 }
 
+
+
+
+metrop_PY_alpha <- function(theta, #previous iteration alpha.DP
+                      pvec,
+                      lik.fun,
+                      V=diag(theta), 
+                      N, shape,rate,discount) {
+  accept<-FALSE
+  ndim <- length(theta)
+  last.lik<-lik.fun(alpha=theta,pvec=pvec,N=N,shape=shape,rate=rate,discount=discount) 
+  last=theta
+  proposal <-.tnorm(1,lo=0,hi=Inf,mu=theta,sig=V)
+  proposal.prior <-  log(dtruncnorm(last,a=0,b=Inf,mean=proposal,sd=V)) #q(x,y)
+  last.prior <-  log(dtruncnorm(proposal,a=0,b=Inf,mean=last,sd=V)) #q(y,x)
+  proposal.lik <- lik.fun(proposal,pvec,N,shape,rate,discount)
+  alpha <- exp(proposal.lik+proposal.prior-last.lik-last.prior)
+  if (alpha > runif(1)) accept <- TRUE
+  if (accept) {
+    last <- proposal
+  }
+  return(last)
+}
+
+
+metrop_PY_discount <- function(theta, #previous iteration alpha.DP
+                            pvec,
+                            lik.fun,
+                            ro.disc,
+                            V=diag(theta), 
+                            N, alpha) { 
+            accept<-FALSE
+            ndim <- length(theta)
+            last.lik<-lik.fun(theta,pvec=pvec,N=N,ro.disc,alpha) 
+            last=theta
+            proposal <-.tnorm(1,lo=0,hi=1,mu=theta,sig=V)
+            proposal.prior <-  log(dtruncnorm(last,a=0,b=1,mean=proposal,sd=V)) #q(x,y)
+            last.prior <-  log(dtruncnorm(proposal,a=0,b=1,mean=last,sd=V)) #q(y,x)
+
+            proposal.lik <- lik.fun(proposal,pvec,N,ro.disc,alpha)
+            alpha <- exp(proposal.lik+proposal.prior-last.lik-last.prior)
+            if (alpha > runif(1)) accept <- TRUE
+            if (accept) {
+              last <- proposal
+            }
+            return(last)
+}

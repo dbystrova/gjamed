@@ -1,4 +1,4 @@
-.gjam_2 <- function(formula, xdata, ydata, modelList){
+.gjam_4 <- function(formula, xdata, ydata, modelList){
   
   holdoutN      <-  0
   holdoutIndex  <- numeric(0)
@@ -20,7 +20,8 @@
   
   ematAlpha <- .5
   
-  alpha.DP <- 1
+  alpha.PY <- 1
+  discount.PY<-0.4
   
   for(k in 1:length(modelList)) assign( names(modelList)[k], modelList[[k]] )
   
@@ -212,7 +213,10 @@
   r <- reductList$r
   rate=reductList$rate
   shape=reductList$shape
-  V=reductList$V
+  V1=reductList$V2
+  V2=reductList$V1
+  ro.disc=reductList$ro.disc
+  
   if(!is.null(reductList$N))REDUCT <- T #do reduct!
   
   
@@ -399,10 +403,10 @@
   CLUST <- T   # dirichlet 
   
   #function
-  .param.fn <- .paramWrapper_2(REDUCT, inSamp, SS=length(notOther))
+  .param.fn <- .paramWrapper_4(REDUCT, inSamp, SS=length(notOther))
   sigmaerror <- .1
   otherpar   <- list(S = S, Q = Q, sigmaerror = sigmaerror, 
-                     Z = NA, K =rep(1,S), sigmaDf = sigmaDf,alpha.DP=alpha.DP,rate=rate,shape=shape,V=V) #for now K=1 for all sp
+                     Z = NA, K =rep(1,S), sigmaDf = sigmaDf,alpha.PY=alpha.PY,discount.PY=discount.PY,rate=rate,shape=shape,V1=V1,V2=V2,ro.disc=ro.disc) #for now K=1 for all sp
   sigErrGibbs <- rndEff <- NULL
   
   yp <- y
@@ -418,24 +422,30 @@
                                  2*2*diag(rgamma(r,shape=1,rate=0.001)))) #initial point for Ds?
     otherpar$K <- sample(1:N,length(notOther),replace=T) #initial point for K?
     
-    otherpar$alpha.DP <- alpha.DP #initial point for alpha
+    otherpar$alpha.PY <- alpha.PY #initial point for alpha
+    otherpar$discount.PY <- discount.PY #initial point for alpha
     
-    otherpar$pvec     <- .sampleP(N=N, avec=rep(alpha.DP/N,(N-1)),
-                                       bvec=((N-1):1)*alpha.DP/N, K=otherpar$K)
+    otherpar$pvec     <- .sampleP(N=N, avec=rep(1-discount.PY,(N-1)),
+                                  bvec=((1:(N-1))*discount.PY+alpha.PY), K=otherpar$K)
     otherpar$rate<-rate
     otherpar$shape<-shape
-    otherpar$V<-V
+    otherpar$V1<-V1
+    otherpar$V2<-V2
+    otherpar$ro.disc<-ro.disc
+    
     
     #samplea p given a and b
     #otherpar$pvec     <- .sampleP(N=N, avec=rep(1 ,(N-1)),
-    #                              bvec= rep(alpha.DPN-1), K=otherpar$K)
+    #                              bvec= rep(alpha.PYN-1), K=otherpar$K)
     kgibbs <- matrix(1,ng,S)
     sgibbs <- matrix(0,ng, N*r) #sigma?
     nnames <- paste('N',1:N,sep='-')
     rnames <- paste('r',1:r,sep='-')
     colnames(sgibbs) <- .multivarChainNames(nnames,rnames)
     sigErrGibbs <- rep(0,ng) #standard deviad
-    alpha.DP_g<-rep(0,ng)
+    alpha.PY_g<-rep(0,ng)
+    discount.PY_g<-rep(0,ng)
+    
     rndEff <- w*0
     
   } else {
@@ -831,7 +841,9 @@
       kgibbs[g,notOther]  <- otherpar$K
       sgibbs[g,]          <- as.vector(otherpar$Z)
       sigErrGibbs[g]      <- sigmaerror
-      alpha.DP_g[g]       <- otherpar$alpha.DP
+      alpha.PY_g[g]       <- otherpar$alpha.PY
+      discount.PY_g[g]       <- otherpar$discount.PY
+      
       
       
       if(length(corCols) > 0){
@@ -1726,7 +1738,7 @@
   }
   if(REDUCT) {
     parameters <- append(parameters, list(rndEff = rndTot/ntot))#, specRand = specRand))
-    chains <- append(chains,list(kgibbs = kgibbs, sigErrGibbs = sigErrGibbs,alpha.DP_g=alpha.DP_g))
+    chains <- append(chains,list(kgibbs = kgibbs, sigErrGibbs = sigErrGibbs,alpha.PY_g=alpha.PY_g,discount.PY_g=discount.PY_g))
   }
   
   if('OC' %in% typeNames){
@@ -1783,8 +1795,8 @@
 }
 
 
-.getPars_2 <- function(CLUST, x, N, r, Y, B, D, Z, sigmaerror, K, pvec,
-                       alpha.DP, inSamples,...){      
+.getPars_4 <- function(CLUST, x, N, r, Y, B, D, Z, sigmaerror, K, pvec,
+                       alpha.PY,discount.PY, inSamples,...){      
   
   # Y includes all terms but x%*%beta
   
@@ -1816,29 +1828,23 @@
                          sigmasqk = sigmaerror)
     K    <- unlist( apply(pmat, 1, function(x)sample(1:N, size=1, prob=x)) )
     
-    pvec <- .sampleP(N = N, avec = rep(alpha.DP/N,(N-1)),
-                     bvec = ((N-1):1)*alpha.DP/N, K = K)  
+    pvec <- .sampleP(N = N, avec = rep(1-discount.PY,(N-1)),
+                     bvec = ((1:(N-1))*discount.PY+alpha.PY), K = K)  
     #pvec <- .sampleP(N=N, avec=rep(1,(N-1)),
-    #                bvec=rep(alpha.DP,(N-1)), K=K)
+    #                bvec=rep(alpha.PY,(N-1)), K=K)
     
-    alpha.DP<-metrop_DP(theta=alpha.DP,pvec=pvec,lik.fun=lik.fun,N=N,rate=rate,shape=shape,V=V)
+    alpha.PY<-metrop_PY_alpha(theta=alpha.PY,pvec=pvec,lik.fun=lik.alpha.fun,N=N,rate=rate,shape=shape,V=V1,discount=discount.PY)
+    discount.PY<-metrop_PY_discount(theta=discount.PY,pvec=pvec,lik.fun=lik.disc.fun,ro.disc=ro.disc,N=N,V=V2,alpha=alpha.PY)
     
   }
   
   list(A = Z[K,], D = D, Z = Z, K = K, pvec = pvec, 
-       sigmaerror = sigmaerror, rndEff = rndEff,alpha.DP=alpha.DP,rate,shape,V)
+       sigmaerror = sigmaerror, rndEff = rndEff,alpha.PY=alpha.PY,discount.PY=discount.PY,rate,shape,V)
 } 
 
 
-lik.fun<-function(alpha,pvec,N,shape,rate){
-  
-  tmp<-(gamma(alpha)/((gamma(alpha/N))^N))*prod(pvec^((alpha/N)-1)*alpha^(shape-1))*exp(-rate*alpha)
-  
-  return(log(tmp))
-  
-}
 
-.paramWrapper_2 <- function(REDUCT, inSamples,SS){   
+.paramWrapper_4 <- function(REDUCT, inSamples,SS){   
   
   if(REDUCT){    
     
@@ -1851,14 +1857,19 @@ lik.fun<-function(alpha,pvec,N,shape,rate){
       sigmaerror <- otherpar$sigmaerror
       K          <- otherpar$K
       pvec       <- otherpar$pvec
-      alpha.DP   <- otherpar$alpha.DP
+      alpha.PY   <- otherpar$alpha.PY
+      discount.PY   <- otherpar$discount.PY
       rate       <- otherpar$rate
-      V          <- otherpar$V
-      shape       <- otherpar$shape
+      shape      <- otherpar$shape
+      ro.disc    <- otherpar$ro.disc
+      V1         <- otherpar$V1
+      V2         <- otherpar$V2
       
-      tmp        <- .getPars_2(CLUST, x = x, N = N, r = r, Y = Y, B = t(beta), 
+      
+      tmp        <- .getPars_4(CLUST, x = x, N = N, r = r, Y = Y, B = t(beta), 
                                D = D, Z = Z, sigmaerror = sigmaerror,
-                               K = K, pvec = pvec, alpha.DP = alpha.DP, shape=shape,rate=rate, V=V,
+                               K = K, pvec = pvec, alpha.PY = alpha.PY, discount.PY=discount.PY, shape=shape,rate=rate, V1=V1, V2=V2,
+                               ro.disc=ro.disc,
                                inSamples = inSamples, SELECT = F)
       
       sg <- with(tmp, .expandSigma(sigma = tmp$sigmaerror, SS, Z = tmp$Z, 
@@ -1866,7 +1877,7 @@ lik.fun<-function(alpha,pvec,N,shape,rate){
       
       otherpar <- list(A = tmp$A, N = N, r = r, D = tmp$D, Z = tmp$Z, 
                        sigmaerror = tmp$sigmaerror,
-                       pvec = tmp$pvec, K = tmp$K, alpha.DP = tmp$alpha.DP, shape= shape,rate= rate,V=V)
+                       pvec = tmp$pvec, K = tmp$K, alpha.PY = tmp$alpha.PY,discount.PY=tmp$discount.PY,shape= shape,rate= rate,V=V)
       
       return(list(sg = sg, rndEff = tmp$rndEff, otherpar = otherpar))
     }
@@ -1890,3 +1901,24 @@ lik.fun<-function(alpha,pvec,N,shape,rate){
     }
   }
 }
+
+g_func<- function(alpha, sigma, N){
+  alpha_vec1<- (0:(N-2))*sigma+ alpha +1
+  alpha_vec2<- (1:(N-1))*sigma+ alpha
+  gamma_vec<- gamma(alpha_vec1)/gamma(alpha_vec2)
+  return(prod(gamma_vec))
+}
+
+lik.alpha.fun<-function(alpha,pvec,N,shape,rate,discount){
+  
+  tmp<-g_func(alpha,discount,N)*pvec[length(pvec)]^(alpha)*alpha^(shape-1)*exp(-rate*alpha)
+  return(log(tmp))
+}
+  
+
+lik.disc.fun<-function(discount,pvec,N,ro.disc,alpha){
+  
+  tmp<-(1/(gamma(1-discount)^N))*g_func(alpha,discount,N)*prod(pvec[1:(N-1)]^(-discount))*(pvec[length(pvec)]^(discount*(N-1)))*(ro.disc*ifelse(discount==0,1,0)+2*(1-ro.disc)*ifelse((discount<=0.5 & discount>0),1,0))
+  return(log(tmp))
+}
+
