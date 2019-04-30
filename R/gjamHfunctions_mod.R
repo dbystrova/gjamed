@@ -12392,8 +12392,8 @@ sqrtSeq <- function(maxval){ #labels for sqrt scale
   for(j in simIndex){
     if(REDUCT){
       Z  <- matrix(sgibbs[j,],N,r)
-      ss <- .expandSigma(sigErrGibbs[j], S, Z = Z, kgibbs[j,], REDUCT = REDUCT)
-      si <- invWbyRcpp(sigErrGibbs[j], Z[kgibbs[j,],])
+      ss <- .expandSigma(sigErrGibbs[j], S, Z = Z, kgibbs[j,], REDUCT = REDUCT) #sigma
+      si <- invWbyRcpp(sigErrGibbs[j], Z[kgibbs[j,],]) #inverse sigma
       cc <- .cov2Cor(ss)
       dc <- diag(sqrt(diag(ss)))
       ci <- dc%*%si%*%dc
@@ -12830,10 +12830,9 @@ metrop_DP <- function(theta, #previous iteration alpha.DP
   proposal.prior <-  log(dtruncnorm(last,a=0,b=Inf,mean=proposal,sd=V)) #q(x,y)
   last.prior <-  log(dtruncnorm(proposal,a=0,b=Inf,mean=last,sd=V)) #q(y,x)
   
-  inv.prior<-
   proposal.lik <- lik.fun(proposal,pvec,N,shape,rate)
   alpha <- exp(proposal.lik+proposal.prior-last.lik-last.prior)
-  if (alpha > runif(1)) accept <- TRUE
+  if (alpha > runif(1) & !is.nan(alpha) )accept <- TRUE
   if (accept) {
       last <- proposal
   }
@@ -12857,7 +12856,7 @@ metrop_PY_alpha <- function(theta, #previous iteration alpha.DP
   last.prior <-  log(dtruncnorm(proposal,a=0,b=Inf,mean=last,sd=V)) #q(y,x)
   proposal.lik <- lik.fun(proposal,pvec,N,shape,rate,discount)
   alpha <- exp(proposal.lik+proposal.prior-last.lik-last.prior)
-  if (alpha > runif(1)) accept <- TRUE
+  if (alpha > runif(1) !is.nan(alpha)) accept <- TRUE
   if (accept) {
     last <- proposal
   }
@@ -12881,7 +12880,7 @@ metrop_PY_discount <- function(theta, #previous iteration alpha.DP
 
             proposal.lik <- lik.fun(proposal,pvec,N,ro.disc,alpha)
             alpha <- exp(proposal.lik+proposal.prior-last.lik-last.prior)
-            if (alpha > runif(1)) accept <- TRUE
+            if (alpha > runif(1) & !is.nan(alpha)) accept <- TRUE
             if (accept) {
               last <- proposal
             }
