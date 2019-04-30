@@ -210,9 +210,9 @@
   reductList <- .setupReduct(modelList, S, Q, n) ##########
   N <- reductList$N
   r <- reductList$r
-  rate=reductList$rate
-  shape=reductList$shape
-  V=reductList$V
+  rate <- reductList$rate
+  shape <- reductList$shape
+  V <- reductList$V
   if(!is.null(reductList$N))REDUCT <- T #do reduct!
   
   
@@ -1784,7 +1784,7 @@
 
 
 .getPars_2 <- function(CLUST, x, N, r, Y, B, D, Z, sigmaerror, K, pvec,
-                       alpha.DP, inSamples,...){      
+                       alpha.DP, inSamples,rate,shape,V,...){      
   
   # Y includes all terms but x%*%beta
   

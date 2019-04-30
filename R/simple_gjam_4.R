@@ -1796,7 +1796,7 @@
 
 
 .getPars_4 <- function(CLUST, x, N, r, Y, B, D, Z, sigmaerror, K, pvec,
-                       alpha.PY,discount.PY, inSamples,...){      
+                       alpha.PY,discount.PY, inSamples,rate,shape,V1,V2,ro.disc,...){      
   
   # Y includes all terms but x%*%beta
   

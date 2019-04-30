@@ -34,6 +34,7 @@
   if('CATgroups' %in% names(modelList))attr(typeNames,'CATgroups') <- CATgroups
   
   
+  
   if(!is.null(timeList)){
     if("betaPrior" %in% names(timeList)){
       colnames(timeList$betaPrior$lo) <- 
@@ -430,7 +431,8 @@
     otherpar$pvec     <- .sampleP(N=N, avec=rep(1,(N-1)),
                                   bvec=rep(alpha.DP,(N-1)), K=otherpar$K)
     kgibbs <- matrix(1,ng,S)
-    sgibbs <- matrix(0,ng, N*r) #sigma?
+    sgibbs <- matrix(0,ng, N*r) #zeta
+    
     nnames <- paste('N',1:N,sep='-')
     rnames <- paste('r',1:r,sep='-')
     colnames(sgibbs) <- .multivarChainNames(nnames,rnames)
@@ -444,7 +446,6 @@
     sgibbs <- matrix(0,ng,nK)
     colnames(sgibbs) <- .multivarChainNames(snames,snames)[Kindex] # half matrix
   }
-  
   out <- .param.fn(CLUST=T, x, beta = bg[,notOther], Y = w[,notOther], otherpar)  
   sg[notOther,notOther]    <- out$sg
   otherpar      <- out$otherpar
@@ -824,7 +825,7 @@
       if(TIME)  Y <- Y - mua[,notOther] - mug[,notOther] #no 
       
       tmp <- .param.fn(CLUST=T, x, beta = bg[,notOther], Y = Y, otherpar) #update all but  B
-      sg[notOther,notOther] <- tmp$sg
+      sg[notOther,notOther] <- tmp$sg #should be Sigma
       otherpar            <- tmp$otherpar #update otherpar
       rndEff[,notOther]   <- tmp$rndEff
       sigmaerror          <- otherpar$sigmaerror
@@ -845,7 +846,7 @@
       
       sg[sgOther]         <- .1*sigmaerror
       
-      sinv <- .invertSigma(sg[notOther,notOther],sigmaerror,otherpar,REDUCT)
+      sinv <- .invertSigma(sg[notOther,notOther],sigmaerror,otherpar,REDUCT) #should be inverse sigma
       sdg  <- sqrt(sigmaerror)
       
       if(!TIME){
@@ -1095,7 +1096,7 @@
       
     } else{ #############not TIME
       
-      #prediction (something zbout the partition as well)
+      #prediction (something about the partition as well)
       tmp   <- .updateW( rows=1:n, x, w, y, bg, sg, alpha=alphaB, 
                          cutg, plo, phi, rndEff, groupRandEff, 
                          sigmaerror, wHold )
@@ -1362,7 +1363,7 @@
         tpred  <- tpred + Ttrait
         tpred2 <- tpred2 + Ttrait^2
       }
-    }
+    } #calculates values to be returned
   }     
   
   ################# end gibbs loop ####################
@@ -1784,7 +1785,7 @@
 
 
 .getPars_1 <- function(CLUST, x, N, r, Y, B, D, Z, sigmaerror, K, pvec,
-                     alpha.DP, inSamples,...){      
+                     alpha.DP, inSamples,shape,rate,...){      
   
   # Y includes all terms but x%*%beta
   
