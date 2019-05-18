@@ -1096,7 +1096,7 @@
       
     } else{ #############not TIME
       
-      #prediction (something about the partition as well)
+      #sample the latent variable
       tmp   <- .updateW( rows=1:n, x, w, y, bg, sg, alpha=alphaB, 
                          cutg, plo, phi, rndEff, groupRandEff, 
                          sigmaerror, wHold )
@@ -1830,7 +1830,7 @@
 } 
 
 .paramWrapper_1 <- function(REDUCT, inSamples,SS){   
-  
+    
   if(REDUCT){    
     
     function(CLUST, x,beta,Y,otherpar){
