@@ -4042,7 +4042,7 @@ gjamSensitivity <- function(output, group=NULL, nsim=100){
   ematAlpha <- .5
 
   # PY alpha.DP <- ncol(ydata)          # large values give more variation
-  alpha.DP <- 1
+  alpha.DP <- S
   
   #PY if(alpha.DP == 1)
   #PY   stop('multivariate model: at least 2 columns needed in ydata')
@@ -11630,50 +11630,50 @@ sqrtSeq <- function(maxval){ #labels for sqrt scale
   p
 }
 
-# .getPars <- function(CLUST, x, N, r, Y, B, D, Z, sigmaerror, K, pvec,
-#                      alpha.DP, inSamples,...){      
-#   
-#   # Y includes all terms but x%*%beta
-#   
-#   nn   <- length(inSamples)
-#   p    <- ncol(x)
-#   S    <- ncol(Y)
-#   ntot <- nrow(Y)
-#   nn   <- length(inSamples)
-#   
-#   covR <- solveRcpp( (1/sigmaerror)*crossprod(Z[K,]) + diag(r) ) # Sigma_W
-#   z1   <- crossprod( Z[K,]/sigmaerror,t(Y - x%*%t(B)) )        
-#   RR   <- rmvnormRcpp(ntot, mu = rep(0,r), sigma = covR ) + t(crossprod( covR,z1))
-#   if(nn < ntot)RR[-inSamples,] <- rmvnormRcpp(ntot-nn,mu=rep(0,r), sigma=diag(r))
-#   rndEff <- RR%*%t(Z[K,])
-#   
-#   res        <- sum((Y[inSamples,] - x[inSamples,]%*%t(B) - rndEff[inSamples,] )^2)
-#   sigmaerror <- 1/rgamma(1,shape=(S*nn + 1)/2, rate=res/2)  
-#   
-#   if(CLUST){   #only until convergence
-#     avec <- 1/rgamma(r, shape = (2 + r )/2, 
-#                      rate = ((1/1000000) + 2*diag(solveRcpp(D)) ) )  
-#     
-#     D    <- .riwish(df = (2 + r + N - 1), S = (crossprod(Z) + 2*2*diag(1/avec)))
-#     Z    <- fnZRcpp(kk=K, Yk=Y[inSamples,], Xk=x[inSamples,], Dk=D, Bk=B, 
-#                     Wk=RR[inSamples,], sigmasqk=sigmaerror, Nz=N)
-#     
-#     pmat <- getPmatKRcpp(pveck = pvec,Yk = Y[inSamples,], Zk = Z,
-#                          Xk = x[inSamples,], Bk = B, Wk = RR[inSamples,],
-#                          sigmasqk = sigmaerror)
-#     K    <- unlist( apply(pmat, 1, function(x)sample(1:N, size=1, prob=x)) )
-#     
-#     #pvec <- .sampleP(N = N, avec = rep(alpha.DP/N,(N-1)),
-#     #                 bvec = ((N-1):1)*alpha.DP/N, K = K)  
-#      pvec <- .sampleP(N=N, avec=rep(1,(N-1)),
-#                                   bvec=rep(alpha.DP,(N-1)), K=K)
-#      
-#     alpha.DP<-rgamma(1, shape=N+2-1, rate = 1/2-log(pvec[N]))
-#   }
-#   
-#   list(A = Z[K,], D = D, Z = Z, K = K, pvec = pvec, 
-#        sigmaerror = sigmaerror, rndEff = rndEff,alpha.DP=alpha.DP)
-# } 
+.getPars <- function(CLUST, x, N, r, Y, B, D, Z, sigmaerror, K, pvec,
+                     alpha.DP, inSamples,...){
+
+  # Y includes all terms but x%*%beta
+
+  nn   <- length(inSamples)
+  p    <- ncol(x)
+  S    <- ncol(Y)
+  ntot <- nrow(Y)
+  nn   <- length(inSamples)
+
+  covR <- solveRcpp( (1/sigmaerror)*crossprod(Z[K,]) + diag(r) ) # Sigma_W
+  z1   <- crossprod( Z[K,]/sigmaerror,t(Y - x%*%t(B)) )
+  RR   <- rmvnormRcpp(ntot, mu = rep(0,r), sigma = covR ) + t(crossprod( covR,z1))
+  if(nn < ntot)RR[-inSamples,] <- rmvnormRcpp(ntot-nn,mu=rep(0,r), sigma=diag(r))
+  rndEff <- RR%*%t(Z[K,])
+
+  res        <- sum((Y[inSamples,] - x[inSamples,]%*%t(B) - rndEff[inSamples,] )^2)
+  sigmaerror <- 1/rgamma(1,shape=(S*nn + 1)/2, rate=res/2)
+
+  if(CLUST){   #only until convergence
+    avec <- 1/rgamma(r, shape = (2 + r )/2,
+                     rate = ((1/1000000) + 2*diag(solveRcpp(D)) ) )
+
+    D    <- .riwish(df = (2 + r + N - 1), S = (crossprod(Z) + 2*2*diag(1/avec)))
+    Z    <- fnZRcpp(kk=K, Yk=Y[inSamples,], Xk=x[inSamples,], Dk=D, Bk=B,
+                    Wk=RR[inSamples,], sigmasqk=sigmaerror, Nz=N)
+
+    pmat <- getPmatKRcpp(pveck = pvec,Yk = Y[inSamples,], Zk = Z,
+                         Xk = x[inSamples,], Bk = B, Wk = RR[inSamples,],
+                         sigmasqk = sigmaerror)
+    K    <- unlist( apply(pmat, 1, function(x)sample(1:N, size=1, prob=x)) )
+ 
+    pvec <- .sampleP(N = N, avec = rep(alpha.DP/N,(N-1)),
+                    bvec = ((N-1):1)*alpha.DP/N, K = K)
+    #  pvec <- .sampleP(N=N, avec=rep(1,(N-1)),
+    #                               bvec=rep(alpha.DP,(N-1)), K=K)
+    # 
+    # alpha.DP<-rgamma(1, shape=N+2-1, rate = 1/2-log(pvec[N]))
+  }
+
+  list(A = Z[K,], D = D, Z = Z, K = K, pvec = pvec,
+       sigmaerror = sigmaerror, rndEff = rndEff,alpha.DP=alpha.DP)
+}
 
 
 .wWrapperTime <- function(sampleW, y, timeZero, i1, i2, tindex, gindex, uindex,
@@ -12273,54 +12273,54 @@ sqrtSeq <- function(maxval){ #labels for sqrt scale
   }
 }
       
-# .paramWrapper <- function(REDUCT, inSamples,SS){   
-#   
-#   if(REDUCT){    
-#     
-#     function(CLUST, x,beta,Y,otherpar){
-#       
-#       N  <- otherpar$N
-#       r  <- otherpar$r
-#       D  <- otherpar$D
-#       Z  <- otherpar$Z
-#       sigmaerror <- otherpar$sigmaerror
-#       K          <- otherpar$K
-#       pvec       <- otherpar$pvec
-#       alpha.DP   <- otherpar$alpha.DP
-#       tmp        <- .getPars(CLUST, x = x, N = N, r = r, Y = Y, B = t(beta), 
-#                              D = D, Z = Z, sigmaerror = sigmaerror,
-#                              K = K, pvec = pvec, alpha.DP = alpha.DP,
-#                              inSamples = inSamples, SELECT = F)
-#       
-#       sg <- with(tmp, .expandSigma(sigma = tmp$sigmaerror, SS, Z = tmp$Z, 
-#                                    K = tmp$K, REDUCT=T))
-#       
-#       otherpar <- list(A = tmp$A, N = N, r = r, D = tmp$D, Z = tmp$Z, 
-#                        sigmaerror = tmp$sigmaerror,
-#                        pvec = tmp$pvec, K = tmp$K, alpha.DP = alpha.DP)
-#       
-#       return(list(sg = sg, rndEff = tmp$rndEff, otherpar = otherpar))
-#     }
-#     
-#   } else {
-#     
-#     function(CLUST, x, beta,Y,otherpar){
-#       
-#       sigmaDf  <- otherpar$sigmaDf
-#       XX  <- crossprod(x[inSamples,])
-#       IXX <- solveRcpp(XX)
-#       WX  <- crossprod(x[inSamples,], Y[inSamples,])
-#       WIX <- IXX%*%WX
-#       
-#       sg <- .updateWishartNoPrior( x[inSamples,], Y[inSamples,], sigmaDf,
-#                                    beta = beta, IXX = IXX, WX = WX, WIX = WIX,
-#                                    TRYPRIOR = T)$sigma
-#       otherpar=list(Z = NA, K = NA, sigmaDf = sigmaDf)
-#       
-#       return(list(sg = sg, otherpar = otherpar))
-#     }
-#   }
-# }
+.paramWrapper <- function(REDUCT, inSamples,SS){
+
+  if(REDUCT){
+
+    function(CLUST, x,beta,Y,otherpar){
+
+      N  <- otherpar$N
+      r  <- otherpar$r
+      D  <- otherpar$D
+      Z  <- otherpar$Z
+      sigmaerror <- otherpar$sigmaerror
+      K          <- otherpar$K
+      pvec       <- otherpar$pvec
+      alpha.DP   <- otherpar$alpha.DP
+      tmp        <- .getPars(CLUST, x = x, N = N, r = r, Y = Y, B = t(beta),
+                             D = D, Z = Z, sigmaerror = sigmaerror,
+                             K = K, pvec = pvec, alpha.DP = alpha.DP,
+                             inSamples = inSamples, SELECT = F)
+
+      sg <- with(tmp, .expandSigma(sigma = tmp$sigmaerror, SS, Z = tmp$Z,
+                                   K = tmp$K, REDUCT=T))
+
+      otherpar <- list(A = tmp$A, N = N, r = r, D = tmp$D, Z = tmp$Z,
+                       sigmaerror = tmp$sigmaerror,
+                       pvec = tmp$pvec, K = tmp$K, alpha.DP = alpha.DP)
+
+      return(list(sg = sg, rndEff = tmp$rndEff, otherpar = otherpar))
+    }
+
+  } else {
+
+    function(CLUST, x, beta,Y,otherpar){
+
+      sigmaDf  <- otherpar$sigmaDf
+      XX  <- crossprod(x[inSamples,])
+      IXX <- solveRcpp(XX)
+      WX  <- crossprod(x[inSamples,], Y[inSamples,])
+      WIX <- IXX%*%WX
+
+      sg <- .updateWishartNoPrior( x[inSamples,], Y[inSamples,], sigmaDf,
+                                   beta = beta, IXX = IXX, WX = WX, WIX = WIX,
+                                   TRYPRIOR = T)$sigma
+      otherpar=list(Z = NA, K = NA, sigmaDf = sigmaDf)
+
+      return(list(sg = sg, otherpar = otherpar))
+    }
+  }
+}
 
 .rwish <- function(df,SS){
   z  <- matrix(rnorm(df*nrow(SS)),df,nrow(SS))%*%chol(SS)
@@ -12885,4 +12885,45 @@ metrop_PY_discount <- function(theta, #previous iteration alpha.DP
               last <- proposal
             }
             return(last)
+}
+
+
+.bisec<-function (f, a, b, num = 10, eps = 1e-05) 
+{
+  h = abs(b - a)/num
+  i = 0
+  j = 0
+  a1 = b1 = 0
+  while (i <= num) {
+    a1 = a + i * h
+    b1 = a1 + h
+    if (f(a1) == 0) {
+      print(a1)
+      print(f(a1))
+    }
+    else if (f(b1) == 0) {
+      print(b1)
+      print(f(b1))
+    }
+    else if (f(a1) * f(b1) < 0) {
+      repeat {
+        if (abs(b1 - a1) < eps) 
+          break
+        x <- (a1 + b1)/2
+        if (f(a1) * f(x) < 0) 
+          b1 <- x
+        else a1 <- x
+      }
+      print(j + 1)
+      j = j + 1
+      print((a1 + b1)/2)
+      print(f((a1 + b1)/2))
+    }
+    i = i + 1
+  }
+  if (j == 0) {
+    print("finding root is fail")
+    return(0)
+  }
+  else return(x)
 }
