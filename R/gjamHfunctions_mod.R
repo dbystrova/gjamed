@@ -12858,6 +12858,7 @@ metrop_PY_alpha <- function(theta, #previous iteration alpha.DP
   alpha <- exp(proposal.lik+proposal.prior-last.lik-last.prior)
 <<<<<<< HEAD
   if (alpha > runif(1) & !is.nan(alpha)) accept <- TRUE
+=======
   if (alpha > runif(1)&!is.nan(alpha)) accept <- TRUE
 >>>>>>> 9902a28fc2d0665710e9173bdaf00af6be9d63d3
   if (accept) {
