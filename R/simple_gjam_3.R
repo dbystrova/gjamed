@@ -1,11 +1,6 @@
 .gjam_3 <- function(formula, xdata, ydata, modelList){
   
 
-  ydata<-treeYdata
-  xdata<-xdata
-  modelList<-ml
-  formula<-form
-  
   holdoutN      <-  0
   holdoutIndex  <- numeric(0)
   modelSummary  <- betaPrior  <- traitList <- effort <- NULL
@@ -25,9 +20,9 @@
     rowInserts <- Lmat <- Amat <- beta <- NULL
   
   ematAlpha <- .5
-  sigma_py<-0.4
+  #sigma_py<-0.4
   #alpha.DP <- ncol(ydata)          # large values give more variation
-  alpha.DP <-1
+ # alpha.DP <-1
   # if(alpha.DP == 1)
   #   stop('multivariate model: at least 2 columns needed in ydata')
   
