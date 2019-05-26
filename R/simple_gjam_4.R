@@ -20,8 +20,8 @@
   
   ematAlpha <- .5
   
-  alpha.PY <- 1
-  discount.PY<-0.4
+  alpha.PY <- 10
+  discount.PY<-0.2
   
   for(k in 1:length(modelList)) assign( names(modelList)[k], modelList[[k]] )
   
@@ -213,8 +213,8 @@
   r <- reductList$r
   rate=reductList$rate
   shape=reductList$shape
-  V1=reductList$V2
-  V2=reductList$V1
+  V1=reductList$V1
+  V2=reductList$V2
   ro.disc=reductList$ro.disc
   
   if(!is.null(reductList$N))REDUCT <- T #do reduct!
@@ -1834,12 +1834,12 @@
     #                bvec=rep(alpha.PY,(N-1)), K=K)
     
     alpha.PY<-metrop_PY_alpha(theta=alpha.PY,pvec=pvec,lik.fun=lik.alpha.fun,N=N,rate=rate,shape=shape,V=V1,discount=discount.PY)
-    discount.PY<-metrop_PY_discount(theta=discount.PY,pvec=pvec,lik.fun=lik.disc.fun,ro.disc=ro.disc,N=N,V=V2,alpha=alpha.PY)
+    discount.PY<-metrop_PY_discount(theta=discount.PY,pvec=pvec,lik.fun=lik.disc.fun,ro.disc=ro.disc,N=N,V=V2,alpha.PY=alpha.PY)
     
   }
   
   list(A = Z[K,], D = D, Z = Z, K = K, pvec = pvec, 
-       sigmaerror = sigmaerror, rndEff = rndEff,alpha.PY=alpha.PY,discount.PY=discount.PY,rate,shape,V)
+       sigmaerror = sigmaerror, rndEff = rndEff,alpha.PY=alpha.PY,discount.PY=discount.PY,rate,shape,V1=V1,V2=V2,ro.disc=ro.disc)
 } 
 
 
@@ -1877,7 +1877,7 @@
       
       otherpar <- list(A = tmp$A, N = N, r = r, D = tmp$D, Z = tmp$Z, 
                        sigmaerror = tmp$sigmaerror,
-                       pvec = tmp$pvec, K = tmp$K, alpha.PY = tmp$alpha.PY,discount.PY=tmp$discount.PY,shape= shape,rate= rate,V=V)
+                       pvec = tmp$pvec, K = tmp$K, alpha.PY = tmp$alpha.PY,discount.PY=tmp$discount.PY,shape= shape,rate= rate,V1=V1,V2=V2,ro.disc=ro.disc)
       
       return(list(sg = sg, rndEff = tmp$rndEff, otherpar = otherpar))
     }
@@ -1910,15 +1910,15 @@ g_func<- function(alpha, sigma, N){
 }
 
 lik.alpha.fun<-function(alpha,pvec,N,shape,rate,discount){
-  
-  tmp<-g_func(alpha,discount,N)*pvec[length(pvec)]^(alpha)*alpha^(shape-1)*exp(-rate*alpha)
-  return(log(tmp))
+  tmp<-sum(log(gamma(alpha+1+discount*(c(1:(N-1))-1)))-log(gamma((alpha+discount*c(1:(N-1))))))+alpha*log(pvec[N])+(shape-1)*log(alpha)-rate*alpha
+  #tmp<-g_func(alpha,discount,N)*pvec[length(pvec)]^(alpha)*alpha^(shape-1)*exp(-rate*alpha)
+  return(tmp)
 }
   
 
 lik.disc.fun<-function(discount,pvec,N,ro.disc,alpha){
-  
-  tmp<-(1/(gamma(1-discount)^N))*g_func(alpha,discount,N)*prod(pvec[1:(N-1)]^(-discount))*(pvec[length(pvec)]^(discount*(N-1)))*(ro.disc*ifelse(discount==0,1,0)+2*(1-ro.disc)*ifelse((discount<=0.5 & discount>0),1,0))
-  return(log(tmp))
+  tmp<- (-N*log(gamma(1-discount)))+sum(log(gamma(alpha+1+discount*(c(1:(N-1))-1)))-log(gamma((alpha+discount*c(1:(N-1))))))-discount*sum(log(pvec[1:(N-1)]))+discount*(N-1)*pvec[N]+log(ro.disc*ifelse(discount==0,1,0)+2*(1-ro.disc)*ifelse((discount<=0.5 & discount>0),1,0))
+  #tmp<-(1/(gamma(1-discount)^N))*g_func(alpha,discount,N)*prod(pvec[1:(N-1)]^(-discount))*(pvec[length(pvec)]^(discount*(N-1)))*(ro.disc*ifelse(discount==0,1,0)+2*(1-ro.disc)*ifelse((discount<=0.5 & discount>0),1,0))
+  return(tmp)
 }
 

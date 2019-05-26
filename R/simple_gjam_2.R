@@ -1832,9 +1832,10 @@
 
 lik.fun<-function(alpha,pvec,N,shape,rate){
   
-  tmp<-(gamma(alpha)/((gamma(alpha/N))^N))*prod(pvec^((alpha/N)-1)*alpha^(shape-1))*exp(-rate*alpha)
+  tmp<-log(gamma(alpha)) - N*log(gamma(alpha/N)) + sum(((alpha/N)-1)*log(pvec)) + (shape-1)*log(alpha) - rate*alpha
   
-  return(log(tmp))
+  
+  return(tmp)
   
 }
 

@@ -1564,9 +1564,9 @@
       pvec       <- otherpar$pvec
       alpha.DP   <- otherpar$alpha.DP
       sigma_py   <- otherpar$sigma_py
-      tmp        <- .getPars(CLUST, x = x, N = N, r = r, Y = Y, B = t(beta), 
+      tmp        <- .getPars_3(CLUST, x = x, N = N, r = r, Y = Y, B = t(beta), 
                              D = D, Z = Z, sigmaerror = sigmaerror,
-                             K = K, pvec = pvec, alpha.DP = alpha.DP,sigma_py=sigma_py,
+                             K = K, pvec = pvec, alpha.DP = alpha.DP,sigma.py=sigma_py,
                              inSamples = inSamples, SELECT = F)
       
       sg <- with(tmp, .expandSigma(sigma = tmp$sigmaerror, SS, Z = tmp$Z, 

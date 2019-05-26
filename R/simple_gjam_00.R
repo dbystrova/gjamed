@@ -1,4 +1,4 @@
-.gjam_1 <- function(formula, xdata, ydata, modelList){
+.gjam00 <- function(formula, xdata, ydata, modelList){
   
   holdoutN      <-  0
   holdoutIndex  <- numeric(0)
@@ -9,7 +9,7 @@
   ng     <- 2000
   burnin <- 500
   REDUCT <- TRAITS <- FULL <- F
-  PREDICTX <- F
+  PREDICTX <- T
   lambdaPrior <- betaPrior <- NULL
   
   RANDOM <- F              # random group intercepts
@@ -21,19 +21,16 @@
   ematAlpha <- .5
   
   # PY alpha.DP <- ncol(ydata)          # large values give more variation
-  alpha.DP <- 1
+  #alpha.DP <- 1
   
   #PY if(alpha.DP == 1)
   #PY   stop('multivariate model: at least 2 columns needed in ydata')
   
-  for(k in 1:length(modelList)) assign( names(modelList)[k], modelList[[k]] )
+  for(k in 1:length(modelList))assign( names(modelList)[k], modelList[[k]] )
   
-  #usually not
   if('CCgroups' %in% names(modelList))attr(typeNames,'CCgroups')  <- CCgroups
   if('FCgroups' %in% names(modelList))attr(typeNames,'FCgroups')  <- FCgroups
   if('CATgroups' %in% names(modelList))attr(typeNames,'CATgroups') <- CATgroups
-  
-  
   
   if(!is.null(timeList)){
     if("betaPrior" %in% names(timeList)){
@@ -77,16 +74,13 @@
   
   if(missing(xdata)) xdata <- environment(formula)
   
-  #number of species
   S <- ncol(ydata)
-  
-  #assign the type of data to every species
-  if(length(typeNames) == 1) typeNames <- rep(typeNames,S)
+  if(length(typeNames) == 1)typeNames <- rep(typeNames,S)
   if(length(typeNames) != S) 
     stop('typeNames must be one value or no. columns in y')
   
-
-  #just checks for factors (and if not CAT data => error)
+  ############### factors in y
+  
   tmp <- .checkYfactor(ydata, typeNames)
   ydata <- tmp$ydata; yordNames <- tmp$yordNames
   
@@ -116,11 +110,8 @@
     }
   }
   
-  
   tmp <- .buildYdata(ydata, typeNames)
-  # y is always the nxS matrix
   y   <- tmp$y
-  #new is just a more cleaner name
   ydataNames <- tmp$ydataNames
   typeNames  <- tmp$typeNames
   CCgroups   <- tmp$CCgroups
@@ -134,16 +125,15 @@
   cat("\nObservations and responses:\n")
   print(c(n, S))
   
-  # NO EFFORT PLEASE [actually just a matrix of 1]
   tmp    <- .buildEffort(y, effort, typeNames)
   effort <- tmp
   effMat <- effort$values
   modelList$effort <- effort
   re <- floor( diff( range(log10(effMat),na.rm=T) ) )
   if(re > 2)
-  message(paste('sample effort > ', re, ' orders of magnitude--consider units near 1',sep='') )
-
-  #stuff with types
+    message(paste('sample effort > ', re, ' orders of magnitude--consider units near 1',sep='') )
+  
+  
   tmp      <- .gjamGetTypes(typeNames)
   typeCols <- tmp$typeCols
   typeFull <- tmp$typeFull
@@ -151,11 +141,8 @@
   allTypes <- sort(unique(typeCols))
   
   tmp <- .gjamXY(formula, xdata, y, typeNames, notStandard)
-  # x is the nxp STANDARDIZED design matrix, same for y, names is species names (vector)
   x      <- tmp$x; y <- tmp$y; snames <- tmp$snames
-  #xdata is the row xdata and xnames are its names
   xdata  <- tmp$xdata; xnames <- tmp$xnames
-  
   interBeta   <- tmp$interaction 
   factorBeta  <- tmp$factorAll
   designTable <- tmp$designTable;    xscale <- tmp$xscale
@@ -195,9 +182,8 @@
   
   Q <- ncol(x)
   
-  # RETRIEVE MISSING VALUES, NOT NEEDED
   tmp <- .gjamMissingValues(x, y, factorBeta$factorList, typeNames)
-  xmiss  <- tmp$xmiss;   xbound <- tmp$xbound;
+  xmiss  <- tmp$xmiss;   xbound <- tmp$xbound; 
   ymiss  <- tmp$ymiss;   missY <- tmp$missY
   xprior <- tmp$xprior;  yprior <- tmp$yprior
   nmiss  <- nrow(xmiss); mmiss  <- nrow(ymiss)
@@ -211,28 +197,21 @@
     xl <- tmp$x
   }
   
-  #impose dimension reduction even if we don't want it (or it fixes it to the one we want)
   reductList <- .setupReduct(modelList, S, Q, n) ##########
   N <- reductList$N; r <- reductList$r
-  rate=reductList$rate
-  shape=reductList$shape
-  if(!is.null(reductList$N))REDUCT <- T #do reduct!
+  alpha.DP<-reductList$alpha.DP
+  if(!is.null(reductList$N))REDUCT <- T
   
   
-  # Leave out a part of the dataset to do prediction
+  
+  
   tmp <- .gjamHoldoutSetup(holdoutIndex, holdoutN, n)
   holdoutIndex <- tmp$holdoutIndex; holdoutN <- tmp$holdoutN
   inSamples    <- tmp$inSamples;         nIn <- tmp$nIn
   
-  # creates the latent variable w by sampling in the intervals
-  # y is y, z=y+1
-  # classBySpec is the distribution of data in the classes
-  # breakMat is breaks of the classes
-  #all the rest stuff like indexes to species of different kind (disCols,ordCols...)
-  
   tmp <- .gjamSetup(typeNames, x, y, breakList, holdoutN, holdoutIndex,
                     censor=censor, effort=effort) 
-    w <- tmp$w; z <- tmp$z; y <- tmp$y; other <- tmp$other; cuts <- tmp$cuts
+  w <- tmp$w; z <- tmp$z; y <- tmp$y; other <- tmp$other; cuts <- tmp$cuts
   cutLo       <- tmp$cutLo; cutHi <- tmp$cutHi; plo <- tmp$plo; phi <- tmp$phi
   ordCols     <- tmp$ordCols; disCols <- tmp$disCols; compCols <- tmp$compCols 
   conCols     <- which(typeNames == 'CON')
@@ -252,7 +231,6 @@
   wmax  <- apply(y/effMat,2,max,na.rm=T)
   pmin  <- -2*abs(wmax)
   
-  #nope
   if(mmiss > 0){
     phi[ ymiss ] <- wmax[ ymiss[,2] ]
     plo[ ymiss ] <- pmin[ ymiss[,2] ]
@@ -261,7 +239,6 @@
   
   ploHold <- phiHold <- NULL
   
-  #w latent vaariable for future prediction
   if(holdoutN > 0){
     sampleWhold <- sampleW[holdoutIndex,]  #to predict X
     sampleW[holdoutIndex,] <- 1
@@ -272,23 +249,19 @@
     phiHold <- phi[drop=F,holdoutIndex,]
   }
   
-  #whether species are columns or rows?!
   byCol <- byRow <- F
   if(attr(sampleW,'type') == 'cols')byCol <- T
   if(attr(sampleW,'type') == 'rows')byRow <- T
-  #index of species?!
   indexW <- attr(sampleW,'index')
   
-  #species not of data type cor ('PA','OC','CAT')
   notCorCols <- c(1:S)
-  if(length(corCols) > 0)notCorCols <- notCorCols[-corCols] 
+  if(length(corCols) > 0)notCorCols <- notCorCols[-corCols]
   
   ############ 'other' columns
   sigmaDf  <- nIn - Q + S - 1
   sg <- diag(.1,S)
   SO <- S
   
-  #others are the rare species (put there by gjamTrim at the beginning)
   notOther <- c(1:S)
   sgOther  <- NULL
   if(length(other) > 0){                     
@@ -299,11 +272,7 @@
     sg[sgOther] <- .1
   }
   
-  
   ############## prior on beta
-  
-  #takes care of cases when we wanted some trucnated priors for beta
-  
   loB <- hiB <- NULL
   beta <- bg <- matrix(0,Q,S)
   rownames(beta) <- colnames(x)
@@ -337,7 +306,7 @@
   zeroBeta <- .factorCoeffs2Zero(factorBeta, snames, betaPrior)  # max zero is missing factor level
   zeroLambda <- NULL
   
-  ############### time NOPE THANKS
+  ############### time 
   if( TIME ){
     
     BPRIOR <- T
@@ -378,7 +347,6 @@
     }
   } 
   
-  #remove other species from inw and indexW
   if(byCol){
     inw <- intersect( colnames(y)[indexW], colnames(y)[notOther] )
     indexW <- match(inw,colnames(y)[notOther])
@@ -386,11 +354,11 @@
   
   IXX <- NULL
   if(nmiss == 0){
-    XX    <- crossprod(x) 
+    XX    <- crossprod(x)
     IXX <- chol2inv(chol( XX ) )
-  } # (XtX)^-1
+  }
   
-  #it's a function to update beta in the gibbs sampler depening on what we have.
+  
   updateBeta <- .betaWrapper(REDUCT, TIME, BPRIOR, notOther, IXX, 
                              betaLim=max(wmax)/2)
   
@@ -401,43 +369,36 @@
   
   CLUST <- T   # dirichlet 
   
-  #function
-  .param.fn <- .paramWrapper_1(REDUCT, inSamp, SS=length(notOther))
+  .param.fn <- .paramWrapper00(REDUCT, inSamp, SS=length(notOther))
   sigmaerror <- .1
   otherpar   <- list(S = S, Q = Q, sigmaerror = sigmaerror, 
-                     Z = NA, K =rep(1,S), sigmaDf = sigmaDf,rate=rate,alpha.DP=alpha.DP,shape=shape) #for now K=1 for all sp
+                     Z = NA, K =rep(1,S), sigmaDf = sigmaDf)
   sigErrGibbs <- rndEff <- NULL
   
   yp <- y
   wmax <- ymax <- apply(y,2,max)
-  wmax <- wmax/effMat #??
+  wmax <- wmax/effMat
   
   if(REDUCT){
     cat( paste('\nDimension reduced from',S,'X',S,'->',N,'X',r,'responses\n') )
     otherpar$N <- N; otherpar$r <- r; otherpar$sigmaerror <- 0.1
-    otherpar$Z <- rmvnormRcpp(N,rep(0,r),1/S*diag(r)) # initial point for Zs?
+    otherpar$Z <- rmvnormRcpp(N,rep(0,r),1/S*diag(r))
     otherpar$D <- .riwish(df = (2 + r + N), 
                           S = (crossprod(otherpar$Z) +
-                                 2*2*diag(rgamma(r,shape=1,rate=0.001)))) #initial point for Ds?
-    otherpar$K <- sample(1:N,length(notOther),replace=T) #initial point for K?
+                                 2*2*diag(rgamma(r,shape=1,rate=0.001))))
+    otherpar$K <- sample(1:N,length(notOther),replace=T)
     
-    otherpar$alpha.DP <- alpha.DP #initial point for alpha
-    otherpar$rate <- rate
-    otherpar$shape <- shape
-    #   otherpar$pvec     <- .sampleP(N=N, avec=rep(alpha.DP/N,(N-1)),
-    #                                   bvec=((N-1):1)*alpha.DP/N, K=otherpar$K)
+    otherpar$alpha.DP <- alpha.DP
     
-    #sample p given a and b
     otherpar$pvec     <- .sampleP(N=N, avec=rep(1,(N-1)),
                                   bvec=rep(alpha.DP,(N-1)), K=otherpar$K)
     kgibbs <- matrix(1,ng,S)
-    sgibbs <- matrix(0,ng, N*r) #zeta
-    
+    sgibbs <- matrix(0,ng, N*r)
     nnames <- paste('N',1:N,sep='-')
     rnames <- paste('r',1:r,sep='-')
     colnames(sgibbs) <- .multivarChainNames(nnames,rnames)
-    sigErrGibbs <- rep(0,ng) #standard deviad
-    alpha.DP_g<-rep(0,ng)
+    sigErrGibbs <- rep(0,ng)   
+    
     rndEff <- w*0
     
   } else {
@@ -446,6 +407,7 @@
     sgibbs <- matrix(0,ng,nK)
     colnames(sgibbs) <- .multivarChainNames(snames,snames)[Kindex] # half matrix
   }
+  
   out <- .param.fn(CLUST=T, x, beta = bg[,notOther], Y = w[,notOther], otherpar)  
   sg[notOther,notOther]    <- out$sg
   otherpar      <- out$otherpar
@@ -458,8 +420,8 @@
     sig <- sg[notOther,notOther]
     
     if(REDUCT){
-      Y <- Y - rndEff[inSamp,notOther] #weird because it's zero
-      sig <- sigmaerror #weird because it's 0.1
+      Y <- Y - rndEff[inSamp,notOther]
+      sig <- sigmaerror
     }
     
     bg[,notOther] <- updateBeta(X = x[inSamp,], Y, sig, beta = bg[,notOther],
@@ -544,7 +506,7 @@
   if('CC' %in% typeCode)ycount <- rowSums(y[,compCols])
   
   ############ X prediction
-  # SKIP
+  
   tmp <- .xpredSetup(Y, x, bg, interBeta$isNonLinX, factorBeta, 
                      factorBeta$intMat, 
                      standMat, standMu, notOther, notStandard) 
@@ -558,7 +520,7 @@
   linFactor <- NULL
   
   ################## random groups
-  #SKIP
+  
   if('random' %in% names(modelList)){
     
     RANDOM <- T
@@ -602,7 +564,6 @@
   
   
   ################################## XL prediction: variables in both
-  # SKIP
   
   if(TIME){
     
@@ -689,7 +650,7 @@
   
   covx <- cov(x)
   
-  ############ sums for the future
+  ############ sums
   predx  <- predx2 <- xpred*0
   yerror <- ypred  <- ypred2 <- wpred  <- wpred2 <- ymissPred <- ymissPred2 <- y*0
   sumDev <- 0   #for DIC
@@ -804,7 +765,7 @@
   notPA <- which(!typeNames == 'PA' & !typeNames == 'CON')
   
   
-  if(length(y) < 10000 | FULL) FULL <- T #d FULL only if y_data is small
+  if(length(y) < 10000 | FULL) FULL <- T
   
   if(FULL){
     ygibbs <- matrix(0,ng,length(y))
@@ -821,19 +782,17 @@
       #   if(g > burnin)CLUST <- F
       
       Y <- w[,notOther]
-      if(RANDOM)Y <- Y - groupRandEff[,notOther] #no
-      if(TIME)  Y <- Y - mua[,notOther] - mug[,notOther] #no 
+      if(RANDOM)Y <- Y - groupRandEff[,notOther] 
+      if(TIME)  Y <- Y - mua[,notOther] - mug[,notOther] 
       
-      tmp <- .param.fn(CLUST=T, x, beta = bg[,notOther], Y = Y, otherpar) #update all but  B
-      sg[notOther,notOther] <- tmp$sg #should be Sigma
-      otherpar            <- tmp$otherpar #update otherpar
+      tmp <- .param.fn(CLUST=T, x, beta = bg[,notOther], Y = Y, otherpar)
+      sg[notOther,notOther] <- tmp$sg
+      otherpar            <- tmp$otherpar
       rndEff[,notOther]   <- tmp$rndEff
       sigmaerror          <- otherpar$sigmaerror
       kgibbs[g,notOther]  <- otherpar$K
       sgibbs[g,]          <- as.vector(otherpar$Z)
       sigErrGibbs[g]      <- sigmaerror
-      alpha.DP_g[g]       <- otherpar$alpha.DP
-      
       
       if(length(corCols) > 0){
         if(max(diag(sg)[corCols]) > 5){  #overfitting covariance
@@ -842,17 +801,17 @@
                   'reductList$r = ',r, '\nreduce N, r\n')
           )
         }
-      } #error message
+      }
       
       sg[sgOther]         <- .1*sigmaerror
       
-      sinv <- .invertSigma(sg[notOther,notOther],sigmaerror,otherpar,REDUCT) #should be inverse sigma
+      sinv <- .invertSigma(sg[notOther,notOther],sigmaerror,otherpar,REDUCT)
       sdg  <- sqrt(sigmaerror)
       
       if(!TIME){
         Y <- w[inSamp,notOther] - rndEff[inSamp,notOther]
         if(RANDOM)Y <- Y - groupRandEff[inSamp,notOther]
-        bg[,notOther] <- updateBeta(X = x[inSamp,], Y, #update beta
+        bg[,notOther] <- updateBeta(X = x[inSamp,], Y, 
                                     sig = sigmaerror, beta = bg[,notOther],
                                     lo=loB[,notOther], hi=hiB[,notOther])
         muw[inSamp,] <- x[inSamp,]%*%bg
@@ -1096,7 +1055,6 @@
       
     } else{ #############not TIME
       
-      #prediction (something about the partition as well)
       tmp   <- .updateW( rows=1:n, x, w, y, bg, sg, alpha=alphaB, 
                          cutg, plo, phi, rndEff, groupRandEff, 
                          sigmaerror, wHold )
@@ -1108,7 +1066,6 @@
       
       
       Y <- w[,notOther]
-      #prediction on heldout values
       if(holdoutN > 0) Y[holdoutIndex,] <- wHold[,notOther]  # if w not held out
       if(RANDOM)Y <- Y - groupRandEff[,notOther]
       
@@ -1258,21 +1215,18 @@
     if(g > burnin){
       
       ntot   <- ntot + 1
-      ypred  <- ypred + yp #
+      ypred  <- ypred + yp
       ypred2 <- ypred2 + yp^2
       
-      #likelihood
       tmp <- .dMVN(w[,notOther], muw[,notOther], sg[notOther,notOther], log=T)
       
-      sumDev <- sumDev - 2*sum(tmp) #DIC
-      yerror <- yerror + (yp - y)^2 #prediction error
+      sumDev <- sumDev - 2*sum(tmp) 
+      yerror <- yerror + (yp - y)^2
       
       fmat <- fmat + fsens
       
-      #sigma
       sMean  <- sMean + sg
       
-      #w pred
       wpred  <- wpred + w
       wpred2 <- wpred2 + w^2
       
@@ -1285,28 +1239,26 @@
           yy[,inRichness[wpa]] <- round(yp[,inRichness[wpa]]) #######
         }
         
-        #set positive w to presence and negative to absences
         if(length(notPA) > 0){
           w0 <- which(yy[,notPA] <= 0)
           w1 <- which(yy[,notPA] > 0)
           yy[,notPA][w0] <- 0
           yy[,notPA][w1] <- 1
         }
-        #compute shannon index pi=(1/rowsums(yy), then compute rowSums(shan*log(shan),na.rm=T)
-        # we have one shannon index for each plot
+        
         shan <- sweep(yy[,inRichness], 1, rowSums(yy[,inRichness]), '/')
         shan[shan == 0] <- NA
         shan <- -rowSums(shan*log(shan),na.rm=T)
         shannon <- shannon + shan
         
         wpp <- which(yy > 0)
-        ypredPres[wpp]  <- ypredPres[wpp] + yp[wpp] #sum of the predicted abundance (nxS matrix)
-        ypredPres2[wpp] <- ypredPres2[wpp] + yp[wpp]^2 #sum of the predicted abundance (nxS matrix)
-        ypredPresN[wpp] <- ypredPresN[wpp] + 1 #number of times a species is predicted as present
+        ypredPres[wpp]  <- ypredPres[wpp] + yp[wpp]
+        ypredPres2[wpp] <- ypredPres2[wpp] + yp[wpp]^2
+        ypredPresN[wpp] <- ypredPresN[wpp] + 1
         
-        presence[,inRichness] <- presence[,inRichness] + yy[,inRichness] #sum of presences
-        ones <- round(rowSums(yy[,inRichness])) #number of species per plot
-        more <- round(rowSums(yy[,inRichness]*wrich[,inRichness,drop=F])) #just to eliminate species we don't wan to comput
+        presence[,inRichness] <- presence[,inRichness] + yy[,inRichness]
+        ones <- round(rowSums(yy[,inRichness]))
+        more <- round(rowSums(yy[,inRichness]*wrich[,inRichness,drop=F]))
         richFull <- .add2matrix(ones,richFull)
         richness <- .add2matrix(more,richness)  # only for non-missing
       }
@@ -1363,7 +1315,7 @@
         tpred  <- tpred + Ttrait
         tpred2 <- tpred2 + Ttrait^2
       }
-    } #calculates values to be returned
+    }
   }     
   
   ################# end gibbs loop ####################
@@ -1374,21 +1326,18 @@
   otherpar$snames <- snames
   otherpar$xnames <- xnames
   
-  #mean presence
   presence <- presence/ntot
   
   if(RICHNESS){
     missRows <- sort(unique(ymiss[,1]))
-    #mean richness
     richNonMiss <- richness/ntot            #only non-missing plots
     yr  <- as.matrix(ydata[,inRichness]) 
     yr[yr > 0] <- 1
     yr <- rowSums(yr,na.rm=T)
     vv  <- matrix(as.numeric(colnames(richNonMiss)),n,
                   ncol(richNonMiss),byrow=T)
-    #mean richness
     rmu <- rowSums( vv * richNonMiss )/rowSums(richNonMiss)
-    #mean sd
+    
     rsd <- sqrt( rowSums( vv^2 * richNonMiss )/rowSums(richNonMiss) - rmu^2)
     
     vv  <- matrix(as.numeric(colnames(richFull)),n,ncol(richFull),byrow=T)
@@ -1398,10 +1347,8 @@
     
     shan <- sweep(y[,inRichness], 1, rowSums(y[,inRichness]), '/')
     shan[shan == 0] <- NA
-    #observed shannon index
     shanObs <- -rowSums(shan*log(shan),na.rm=T)
     
-    #yr observed reachness
     richness <- cbind(yr, rmu, rsd, rfull, shanObs, shannon/ntot )
     colnames(richness) <- c('obs','predMu','predSd','predNotMissing',
                             'H_obs', 'H_pred')
@@ -1437,11 +1384,9 @@
   xunstand    <- .getUnstandX(x, standRows, standMu[,1],
                               standMat[,1], interBeta$intMat)$xu
   
-  #rmse
   rmspeBySpec <- sqrt( colSums(yerror)/ntot/n )
   rmspeAll    <- sqrt( sum(yerror)/ntot/n/S )
   
-  #mean of sigma
   sMean <- sMean/ntot
   
   if(TIME){
@@ -1478,26 +1423,21 @@
     asensSd <- apply(asensGibbs[burnin:ng,],2,sd)
   }
   
-  #mean, se and CI of B
   tmp <- .chain2tab(bgibbs[burnin:ng,], snames, xnames)
   betaStandXmu <- tmp$mu
   betaStandXTable <- tmp$tab
   
-  #mean, se and CI of Bunstardized
   tmp <- .chain2tab(bgibbsUn[burnin:ng,], snames, xnames)
   betaMu <- tmp$mu
   betaTable <- tmp$tab
   
-  #mean, se and CI of Bfac WTFac
   tmp <- .chain2tab(bFacGibbs[burnin:ng,], snames[notOther], rownames(agg))
   betaStandXWmu <- tmp$mu
   betaStandXWTable <- tmp$tab
   
-  #mean, se and CI of Bfac of F sens
   tmp <- .chain2tab(fSensGibbs[burnin:ng,,drop=F])
   sensTable <- tmp$tab[,1:4]
   
-  #predicted mean and variance
   yMu <- ypred/ntot
   y22 <- ypred2/ntot - yMu^2
   y22[y22 < 0] <- 0
@@ -1727,7 +1667,7 @@
   }
   if(REDUCT) {
     parameters <- append(parameters, list(rndEff = rndTot/ntot))#, specRand = specRand))
-    chains <- append(chains,list(kgibbs = kgibbs, sigErrGibbs = sigErrGibbs,alpha.DP_g=alpha.DP_g))
+    chains <- append(chains,list(kgibbs = kgibbs, sigErrGibbs = sigErrGibbs))
   }
   
   if('OC' %in% typeNames){
@@ -1784,8 +1724,8 @@
 }
 
 
-.getPars_1 <- function(CLUST, x, N, r, Y, B, D, Z, sigmaerror, K, pvec,
-                     alpha.DP, inSamples,shape,rate,...){      
+.getPars00 <- function(CLUST, x, N, r, Y, B, D, Z, sigmaerror, K, pvec,
+                     alpha.DP, inSamples,...){
   
   # Y includes all terms but x%*%beta
   
@@ -1796,20 +1736,20 @@
   nn   <- length(inSamples)
   
   covR <- solveRcpp( (1/sigmaerror)*crossprod(Z[K,]) + diag(r) ) # Sigma_W
-  z1   <- crossprod( Z[K,]/sigmaerror,t(Y - x%*%t(B)) )        
+  z1   <- crossprod( Z[K,]/sigmaerror,t(Y - x%*%t(B)) )
   RR   <- rmvnormRcpp(ntot, mu = rep(0,r), sigma = covR ) + t(crossprod( covR,z1))
   if(nn < ntot)RR[-inSamples,] <- rmvnormRcpp(ntot-nn,mu=rep(0,r), sigma=diag(r))
   rndEff <- RR%*%t(Z[K,])
   
   res        <- sum((Y[inSamples,] - x[inSamples,]%*%t(B) - rndEff[inSamples,] )^2)
-  sigmaerror <- 1/rgamma(1,shape=(S*nn + 1)/2, rate=res/2)  
+  sigmaerror <- 1/rgamma(1,shape=(S*nn + 1)/2, rate=res/2)
   
   if(CLUST){   #only until convergence
-    avec <- 1/rgamma(r, shape = (2 + r )/2, 
-                     rate = ((1/1000000) + 2*diag(solveRcpp(D)) ) )  
+    avec <- 1/rgamma(r, shape = (2 + r )/2,
+                     rate = ((1/1000000) + 2*diag(solveRcpp(D)) ) )
     
     D    <- .riwish(df = (2 + r + N - 1), S = (crossprod(Z) + 2*2*diag(1/avec)))
-    Z    <- fnZRcpp(kk=K, Yk=Y[inSamples,], Xk=x[inSamples,], Dk=D, Bk=B, 
+    Z    <- fnZRcpp(kk=K, Yk=Y[inSamples,], Xk=x[inSamples,], Dk=D, Bk=B,
                     Wk=RR[inSamples,], sigmasqk=sigmaerror, Nz=N)
     
     pmat <- getPmatKRcpp(pveck = pvec,Yk = Y[inSamples,], Zk = Z,
@@ -1818,20 +1758,20 @@
     K    <- unlist( apply(pmat, 1, function(x)sample(1:N, size=1, prob=x)) )
     
     #pvec <- .sampleP(N = N, avec = rep(alpha.DP/N,(N-1)),
-    #                 bvec = ((N-1):1)*alpha.DP/N, K = K)  
+                     #bvec = ((N-1):1)*alpha.DP/N, K = K)
     pvec <- .sampleP(N=N, avec=rep(1,(N-1)),
-                     bvec=rep(alpha.DP,(N-1)), K=K)
-    
-    alpha.DP<-rgamma(1, shape=N+shape-1, rate = rate-log(pvec[N]))
+                                  bvec=rep(alpha.DP,(N-1)), K=K)
+    # 
+    # alpha.DP<-rgamma(1, shape=N+2-1, rate = 1/2-log(pvec[N]))
   }
   
-  list(A = Z[K,], D = D, Z = Z, K = K, pvec = pvec, 
-       sigmaerror = sigmaerror, rndEff = rndEff,alpha.DP=alpha.DP,shape=shape,rate=rate)
-} 
+  list(A = Z[K,], D = D, Z = Z, K = K, pvec = pvec,
+       sigmaerror = sigmaerror, rndEff = rndEff,alpha.DP=alpha.DP)
+}
 
-.paramWrapper_1 <- function(REDUCT, inSamples,SS){   
+.paramWrapper00 <- function(REDUCT, inSamples,SS){
   
-  if(REDUCT){    
+  if(REDUCT){
     
     function(CLUST, x,beta,Y,otherpar){
       
@@ -1843,19 +1783,17 @@
       K          <- otherpar$K
       pvec       <- otherpar$pvec
       alpha.DP   <- otherpar$alpha.DP
-      rate       <- otherpar$rate
-      shape       <- otherpar$shape
-      tmp        <- .getPars_1(CLUST, x = x, N = N, r = r, Y = Y, B = t(beta), 
+      tmp        <- .getPars00(CLUST, x = x, N = N, r = r, Y = Y, B = t(beta),
                              D = D, Z = Z, sigmaerror = sigmaerror,
                              K = K, pvec = pvec, alpha.DP = alpha.DP,
-                             inSamples = inSamples, SELECT = F,shape=shape,rate=rate)
+                             inSamples = inSamples, SELECT = F)
       
-      sg <- with(tmp, .expandSigma(sigma = tmp$sigmaerror, SS, Z = tmp$Z, 
+      sg <- with(tmp, .expandSigma(sigma = tmp$sigmaerror, SS, Z = tmp$Z,
                                    K = tmp$K, REDUCT=T))
       
-      otherpar <- list(A = tmp$A, N = N, r = r, D = tmp$D, Z = tmp$Z, 
+      otherpar <- list(A = tmp$A, N = N, r = r, D = tmp$D, Z = tmp$Z,
                        sigmaerror = tmp$sigmaerror,
-                       pvec = tmp$pvec, K = tmp$K, alpha.DP = tmp$alpha.DP,shape=tmp$shape,rate=tmp$rate)
+                       pvec = tmp$pvec, K = tmp$K, alpha.DP = alpha.DP)
       
       return(list(sg = sg, rndEff = tmp$rndEff, otherpar = otherpar))
     }
