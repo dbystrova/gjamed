@@ -52,7 +52,7 @@ simulation_fun<-function(Sp, Ntr, rval,nsamples=500, Ktrue, it=1000, burn=500,ty
   idx<-sample((1:ceiling(K_t)),S,replace=T) 
   Lambda<-A[idx,] #Sxr tall and skinny
   Sigma<-Lambda%*%t(Lambda)+0.1*diag(S) #SxS
-  Y<-mvrnorm(n = 500, mu=rep(0,S), Sigma=Sigma)
+  Y<-mvrnorm(n = n, mu=rep(0,S), Sigma=Sigma)
   
   xdata<-as.data.frame(X[,-1])
   colnames(xdata)<-c("env1","env2")
