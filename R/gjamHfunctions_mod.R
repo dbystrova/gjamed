@@ -5789,8 +5789,8 @@ gjamSensitivity <- function(output, group=NULL, nsim=100){
 
 
 .chain2tab <- function(chain, snames = NULL, xnames = NULL){
-  
-  mu <- colMeans(chain)  
+  chain=as.data.frame(chain)
+  mu <- colMeans(chain)
   SE <- apply(chain,2,sd)
   CI <- apply(chain,2,quantile,c(.025,.975))
   splus <- rep('', length=length(SE))
