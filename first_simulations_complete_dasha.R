@@ -24,7 +24,6 @@ source("R/simple_gjam_3.R")
 source("R/simple_gjam_4.R")
 
 
-
 simulation_fun<-function(Sp, Ntr, rval,nsamples=500, Ktrue, it=1000, burn=500,type="GJAM"){
   S<-Sp
   n<- nsamples
@@ -40,8 +39,7 @@ simulation_fun<-function(Sp, Ntr, rval,nsamples=500, Ktrue, it=1000, burn=500,ty
   L<-X%*%t(B) #nxS
   
   K=sum(S/(S+(1:S)-1)) #104, his prior number of clusters when alpha=S
-  if(type=="GJAM"){ cat("Prior expected number of clusters : ",K,"\n")}
-  else {cat("Prior expected number of clusters : ",Ktrue,"\n")}
+  cat("Prior expected number of clusters : ",K,"\n")
   K_t= Ktrue
   cat("True number of clusters : ",K_t)
   A<-matrix(NA,nrow=ceiling(K_t),ncol=r)
@@ -52,7 +50,7 @@ simulation_fun<-function(Sp, Ntr, rval,nsamples=500, Ktrue, it=1000, burn=500,ty
   idx<-sample((1:ceiling(K_t)),S,replace=T) 
   Lambda<-A[idx,] #Sxr tall and skinny
   Sigma<-Lambda%*%t(Lambda)+0.1*diag(S) #SxS
-  Y<-mvrnorm(n = n, mu=rep(0,S), Sigma=Sigma)
+  Y<-mvrnorm(n = 500, mu=rep(0,S), Sigma=Sigma)
   
   xdata<-as.data.frame(X[,-1])
   colnames(xdata)<-c("env1","env2")
@@ -69,7 +67,7 @@ simulation_fun<-function(Sp, Ntr, rval,nsamples=500, Ktrue, it=1000, burn=500,ty
     alpha.DP<-.bisec(func,0.01,100)
     rl <- list(r = r, N =Ntr-1,alpha.DP=alpha.DP)
     ml<-list(ng=it,burnin=burn,typeNames='CA',reductList=rl)
-    fit<-.gjam0(formula,xdata,ydata=as.data.frame(Y),modelList = ml)
+    fit<-.gjam_0(formula,xdata,ydata=as.data.frame(Y),modelList = ml)
     alpha.chains<-NULL
   }
   if(type=="1"){
@@ -163,11 +161,11 @@ simulation_fun<-function(Sp, Ntr, rval,nsamples=500, Ktrue, it=1000, burn=500,ty
   df$iter<-1:it
   #plot(apply(fit$chains$kgibbs,1,function(x) length(unique(x))))
   p<-ggplot(df, aes(y=trace, x=iter)) + geom_point() + 
-    labs(title=paste0("Trace plot for the number of groups K for S=",S," r=",r," true K=",K_t," type=",type), caption=paste0("Number of iterations: ",it," burnin: ",burn,"number of samples: ",nsamples))+
+    labs(title=paste0("Trace plot for the number of groups K for S=",S," r=",r," true K=",K_t), caption=paste0("Number of iterations ",it," burnin ",burn))+
     theme_bw() + theme(axis.text.x = element_text(angle = 0, hjust = 1,size = 10), strip.text = element_text(size = 15),legend.position = "top", plot.title = element_text(hjust = 0.5))+
     geom_hline(yintercept = Ktrue,color = "red")
   plot(p)
-  pdf(paste0("Plot-clustersS",S,"r",r,"Ktr",K_t,"type",type,".pdf"))
+  pdf(paste0("Plot-clustersS",S,"r",r,"Ktr",K_t,".pdf"))
   plot(p)
   dev.off()
   
@@ -199,16 +197,14 @@ simulation_fun<-function(Sp, Ntr, rval,nsamples=500, Ktrue, it=1000, burn=500,ty
 # heatmap(sim$coeff_t)
 # plot(sim$trace)
 # plot(sim$idx,sim$K)
+
+
 #possible parameters to add in the loop:
 # - type (T) of gjam to be fitted
 # - n, the number of simulated normals
 # - N, the truncation level
 # - S, the number of species
 # - K_t, the true number of clusters
-
-
-
-
 list=list()
 S_vec<-c(50,100,150,200)
 r_vec<-c(3,5,10,15)
@@ -237,6 +233,10 @@ for(i in 1:length(list)){
 }
 
 
+
+
+
+
 table_r_3<-table[which(table$r==3),]
 p_3<-ggplot(data=table_r_3,aes(x=table_r_3$x,y=table_r_3$trace,color=table_r_3$S))+geom_line()+
   labs(title="r=3, K_t=4")
@@ -252,130 +252,6 @@ p_15<-ggplot(data=table_r_15,aes(x=table_r_10$x,y=table_r_15$trace,color=table_r
 grid.arrange(p_3,p_5,p_10,p_15)
 
 
-###########Simulation for Continous data case :small S###################################################
-
-
-####Small S, N==S, n=500
-
-
-list=list()
-S_vec<-c(20,50,80,100)
-r_vec<-c(3,5,10,15)
-k<-1
-for(i in 1:length(S_vec)){
-  for(j in 1:length(r_vec)){
-    list<-list.append(list,assign(paste0("S_",S_vec[i],"_r_",r_vec[j],"_N_150_n_500_Kt_4_T_0"),simulation_fun(Sp=S_vec[i], Ntr=S_vec[i], rval=r_vec[j],nsamples=500, Ktrue=4,it=1000,burn=100,type="GJAM")))
-    names(list)[[k]]<-paste0("S_",S_vec[i],"_r_",r_vec[j],"_N_150_n_500_Kt_4_T0")
-    k=k+1
-  }
-}
-
-save(list, file = "Sim_smallS_gjam.Rda")
 
 
 
-
-
-
-list2=list()
-S_vec<-c(20,50,80,100)
-r_vec<-c(3,5,10,15)
-k<-1
-for(i in 1:length(S_vec)){
-  for(j in 1:length(r_vec)){
-    list2<-list.append(list2,assign(paste0("S_",S_vec[i],"_r_",r_vec[j],"_N_150_n_500_Kt_4_T_0"),simulation_fun(Sp=S_vec[i], Ntr=150, rval=r_vec[j],nsamples=500, Ktrue=4,it=1000,burn=100,type="1")))
-    names(list2)[[k]]<-paste0("S_",S_vec[i],"_r_",r_vec[j],"_N_150_n_500_Kt_4_T0")
-    k=k+1
-  }
-}
-
-
-
-
-save(list2, file = "Sim_smallS_type1.Rda")
-
-
-
-
-
-
-
-
-list3=list()
-S_vec<-c(20,50,80,100)
-r_vec<-c(3,5,10,15)
-k<-1
-for(i in 1:length(S_vec)){
-  for(j in 1:length(r_vec)){
-    list3<-list.append(list3,assign(paste0("S_",S_vec[i],"_r_",r_vec[j],"_N_150_n_500_Kt_4_T_0"),simulation_fun(Sp=S_vec[i], Ntr=S_vec[i], rval=r_vec[j],nsamples=500, Ktrue=4,it=1000,burn=100,type="3")))
-    names(list3)[[k]]<-paste0("S_",S_vec[i],"_r_",r_vec[j],"_N_150_n_500_Kt_4_T0")
-    k=k+1
-  }
-}
-
-
-
-
-save(list3, file = "Sim_smallS_type2.Rda")
-
-
-
-
-list4=list()
-S_vec<-c(20,50,80,100)
-r_vec<-c(3,5,10,15)
-k<-1
-for(i in 1:length(S_vec)){
-  for(j in 1:length(r_vec)){
-    list4<-list.append(list4,assign(paste0("S_",S_vec[i],"_r_",r_vec[j],"_N_150_n_500_Kt_4_T_0"),simulation_fun(Sp=S_vec[i], Ntr=S_vec[i], rval=r_vec[j],nsamples=500, Ktrue=4,it=1000,burn=100,type="4")))
-    names(list4)[[k]]<-paste0("S_",S_vec[i],"_r_",r_vec[j],"_N_150_n_500_Kt_4_T0")
-    k=k+1
-  }
-}
-
-
-save(list3, file = "Sim_smallS_type4.Rda")
-
-
-
-##########################
-
-plot(density(list$S_20_r_3_N_150_n_500_Kt_4_T0$trace), col="red")
-lines(density(list2$S_20_r_3_N_150_n_500_Kt_4_T0$trace), col="green")
-
-
-mean(list$S_20_r_3_N_150_n_500_Kt_4_T0$trace[-c(1:100)])
-
-
-table_comp<-as.data.frame(matrix(NA, nrow=2*length(S_vec), ncol=1))
-table_comp$S<- rep(S_vec, each=2)
-table_comp$mod<- rep(c("list","list2"), 4)
-table_comp$num<- rep(1:4, each=2)
-for(i in (1: nrow(table_comp))){
-  j<-table_comp$num[i]
-  if(table_comp$mod[i]=="list"){ table_comp$res[i]<- mean(list[[4*(j-1)+1]]$trace[-c(1:300)])}
-  if(table_comp$mod[i]=="list2"){ table_comp$res[i]<- mean(list2[[4*(j-1)+1]]$trace[-c(1:300)])}
-}
-
-p <- ggplot(table_comp, aes(S,res, colour = mod))
-q<- p + geom_point( size = 2) +xlab("Species")+ylab("Mean posterior") +theme_bw()
-q
-
-
-
-#########Testing 
-
-
-
-
-listx=list()
-S_vec<-c(20)
-r_vec<-c(5)
-k<-1
-for(i in 1:length(S_vec)){
-  for(j in 1:length(r_vec)){
-    listx<-list.append(listx,assign(paste0("S_",S_vec[i],"_r_",r_vec[j],"_N_150_n_500_Kt_4_T_0"),simulation_fun(Sp=S_vec[i], Ntr=150, rval=r_vec[j],nsamples=500, Ktrue=4,it=1000,burn=100,type="1")))
-    names(listx)[[k]]<-paste0("S_",S_vec[i],"_r_",r_vec[j],"_N_150_n_500_Kt_4_T0")
-    k=k+1
-  }
-}

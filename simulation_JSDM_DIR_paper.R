@@ -58,11 +58,11 @@ simulation_fun<-function(Sp, Ntr, rval,nsamples=500, Ktrue, it=1000, burn=500,ty
   colnames(xdata)<-c("env1","env2")
   formula<-as.formula(~env1+env2)
   if(type=="GJAM"){
-  rl <- list(r = r, N =Ntr-1)
-  ml<-list(ng=it,burnin=burn,typeNames='CA',reductList=rl)
-  fit<-gjam(formula,xdata,ydata=as.data.frame(Y),modelList = ml)
-  alpha.chains<-NULL
-  alpha.DP<-S
+    rl <- list(r = r, N =Ntr-1)
+    ml<-list(ng=it,burnin=burn,typeNames='CA',reductList=rl)
+    fit<-gjam(formula,xdata,ydata=as.data.frame(Y),modelList = ml)
+    alpha.chains<-NULL
+    alpha.DP<-S
   }
   if(type=="0"){
     func<-function(x) {sum(x/(x+(1:S)-1))-K_t}
@@ -94,17 +94,17 @@ simulation_fun<-function(Sp, Ntr, rval,nsamples=500, Ktrue, it=1000, burn=500,ty
   }
   if(type=="3"){
     eps=0.1
-      
+    
     alp_sig<-as.data.frame(matrix(NA,nrow=20,ncol=3))
     colnames(alp_sig)<-c("alpha","sigma","is_less_150")
     alp_sig$sigma=seq(0.05,0.5,length.out = 20)
     #loop to run bisecetion on a grid for sigma
     for(i in 1:20){
-    func<-function(x) {(x/alp_sig[i,"sigma"])*(prod((x+alp_sig[i,"sigma"]+c(1:S))/(x+c(1:S)))-1) - K_t}
-    alp_sig[i,"alpha"]<-.bisec(func,0.01,100)
-    N_eps<-floor(.compute_tau_mean(alp_sig[i,"sigma"], alp_sig[i,"alpha"],eps) + 2*.compute_tau_var(alp_sig[i,"sigma"], alp_sig[i,"alpha"],eps))
-    ifelse(N_eps<=150,alp_sig[i,"is_less_150"]<-T,alp_sig[i,"is_less_150"]<-F)
-    N_eps
+      func<-function(x) {(x/alp_sig[i,"sigma"])*(prod((x+alp_sig[i,"sigma"]+c(1:S))/(x+c(1:S)))-1) - K_t}
+      alp_sig[i,"alpha"]<-.bisec(func,0.01,100)
+      N_eps<-floor(.compute_tau_mean(alp_sig[i,"sigma"], alp_sig[i,"alpha"],eps) + 2*.compute_tau_var(alp_sig[i,"sigma"], alp_sig[i,"alpha"],eps))
+      ifelse(N_eps<=150,alp_sig[i,"is_less_150"]<-T,alp_sig[i,"is_less_150"]<-F)
+      N_eps
     }
     
     if(sum(alp_sig$is_less_150==T)==0) cat("!! no choice under N=150, need to recheck!!!")
@@ -148,7 +148,7 @@ simulation_fun<-function(Sp, Ntr, rval,nsamples=500, Ktrue, it=1000, burn=500,ty
     rate=alpha.PY/10
     # 95% quantile of alpha
     alpha.max=qgamma(.95, shape=shape, rate=rate)
-      
+    
     N_eps<-floor(.compute_tau_mean(sigma_py,alpha.max,eps) + 2*.compute_tau_var(sigma_py,alpha.max,eps))
     
     
@@ -217,8 +217,8 @@ for(i in 1:length(S_vec)){
   for(j in 1:length(r_vec)){
     list<-list.append(list,assign(paste0("S_",S_vec[i],"_r_",r_vec[j],"_N_150_n_500_Kt_4_T_0"),simulation_fun(Sp=S_vec[i], Ntr=150, rval=r_vec[j],nsamples=500, Ktrue=4,it=1000,burn=100,type="GJAM")))
     names(list)[[k]]<-paste0("S_",S_vec[i],"_r_",r_vec[j],"_N_150_n_500_Kt_4_T0")
-     k=k+1
-    }
+    k=k+1
+  }
 }
 
 table<-data.frame()
