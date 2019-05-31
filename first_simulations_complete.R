@@ -181,7 +181,7 @@ simulation_fun<-function(Sp, Ntr, rval,nsamples=500, Ktrue, it=1000, burn=500,ty
   }
   Lambda_mean<-apply(Z,c(1,2),mean)
   err<-sum((Lambda_mean-Lambda)^2)/(S*r)
-  fit<-fit$rmspeAll
+  rmspe<-fit$fit$rmspeAll
   
   return(list(trace=trace, chain=fit$chains$kgibbs,
               coeff_t=Lambda,coeff_f=Lambda_mean,
