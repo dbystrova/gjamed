@@ -118,6 +118,7 @@ simulation_fun<-function(Sp, Ntr, rval,nsamples=500, Ktrue, it=1000, burn=500,ty
     ml<-list(ng=it,burnin=burn,typeNames='CA',reductList=rl)
     fit<-.gjam_3(formula,xdata,ydata=as.data.frame(Y),modelList = ml)
     alpha.chains<-NULL
+    
   }
   if(type=="4"){
     

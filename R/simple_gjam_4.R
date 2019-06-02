@@ -445,6 +445,7 @@
     sigErrGibbs <- rep(0,ng) #standard deviad
     alpha.PY_g<-rep(0,ng)
     discount.PY_g<-rep(0,ng)
+    pk_g<-matrix(1,ng,N)
     
     rndEff <- w*0
     
@@ -843,7 +844,7 @@
       sigErrGibbs[g]      <- sigmaerror
       alpha.PY_g[g]       <- otherpar$alpha.PY
       discount.PY_g[g]       <- otherpar$discount.PY
-      
+      pk_g[g,]              <-otherpar$pvec
       
       
       if(length(corCols) > 0){
@@ -1738,7 +1739,7 @@
   }
   if(REDUCT) {
     parameters <- append(parameters, list(rndEff = rndTot/ntot))#, specRand = specRand))
-    chains <- append(chains,list(kgibbs = kgibbs, sigErrGibbs = sigErrGibbs,alpha.PY_g=alpha.PY_g,discount.PY_g=discount.PY_g))
+    chains <- append(chains,list(kgibbs = kgibbs, sigErrGibbs = sigErrGibbs,alpha.PY_g=alpha.PY_g,discount.PY_g=discount.PY_g,pk_g=pk_g))
   }
   
   if('OC' %in% typeNames){

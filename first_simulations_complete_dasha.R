@@ -67,7 +67,7 @@ simulation_fun<-function(Sp, Ntr, rval,nsamples=500, Ktrue, it=1000, burn=500,ty
     alpha.DP<-.bisec(func,0.01,100)
     rl <- list(r = r, N =Ntr-1,alpha.DP=alpha.DP)
     ml<-list(ng=it,burnin=burn,typeNames='CA',reductList=rl)
-    fit<-.gjam_0(formula,xdata,ydata=as.data.frame(Y),modelList = ml)
+    fit<-.gjam0(formula,xdata,ydata=as.data.frame(Y),modelList = ml)
     alpha.chains<-NULL
   }
   if(type=="1"){

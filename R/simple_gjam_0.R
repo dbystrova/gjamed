@@ -400,6 +400,7 @@
     rnames <- paste('r',1:r,sep='-')
     colnames(sgibbs) <- .multivarChainNames(nnames,rnames)
     sigErrGibbs <- rep(0,ng)   
+    pk_g   <-matrix(1,ng,N)
     
     rndEff <- w*0
     
@@ -795,6 +796,7 @@
       kgibbs[g,notOther]  <- otherpar$K
       sgibbs[g,]          <- as.vector(otherpar$Z)
       sigErrGibbs[g]      <- sigmaerror
+      pk_g[g,]              <-otherpar$pvec
       
       if(length(corCols) > 0){
         if(max(diag(sg)[corCols]) > 5){  #overfitting covariance
@@ -1669,7 +1671,7 @@
   }
   if(REDUCT) {
     parameters <- append(parameters, list(rndEff = rndTot/ntot))#, specRand = specRand))
-    chains <- append(chains,list(kgibbs = kgibbs, sigErrGibbs = sigErrGibbs))
+    chains <- append(chains,list(kgibbs = kgibbs, sigErrGibbs = sigErrGibbs, pk_g=pk_g))
   }
   
   if('OC' %in% typeNames){
