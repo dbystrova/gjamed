@@ -434,9 +434,9 @@
     otherpar$ro.disc<-ro.disc
     
     
-    #samplea p given a and b
+    #sample p given a and b
     #otherpar$pvec     <- .sampleP(N=N, avec=rep(1 ,(N-1)),
-    #                              bvec= rep(alpha.PYN-1), K=otherpar$K)
+    #                              bvec= rep(alpha.PY,N-1), K=otherpar$K)
     kgibbs <- matrix(1,ng,S)
     sgibbs <- matrix(0,ng, N*r) #sigma?
     nnames <- paste('N',1:N,sep='-')
