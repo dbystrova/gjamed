@@ -327,28 +327,35 @@ simulation_fun_oneDS<-function(data_set,Sp, Ntr, rval,nsamples=500, Ktrue,q=20, 
  
   #plot(plot_vs)
   
-  pdf(paste0("plots/Plot-clusters_S",S,"r",r,"Ktr",K_t,"mod_type_",type,".pdf"))
-  plot(p)
+  #pdf(paste0("plots/Plot-clusters_S",S,"r",r,"Ktr",K_t,"mod_type_",type,".pdf"))
+  #plot(p)
+  plot_list<-list()
+  plot_list<-list.append(plot_list,p)
   if(type%in%c("1","2","4")){ 
-    plot(p_alpha_1)
-    plot(p_alpha_2)
+    #plot(p_alpha_1)
+    #plot(p_alpha_2)
+    plot_list<-list.append(plot_list,p_alpha_1)
+    plot_list<-list.append(plot_list,p_alpha_2)
   }
   if(type%in%c("4")){ 
-    plot(p_sigma)
-    plot(p_trace_sigma)
+   # plot(p_sigma)
+  #  plot(p_trace_sigma)
+    plot_list<-list.append(plot_list,p_sigma)
+    plot_list<-list.append(plot_list,p_trace_sigma)
   }
   if(type%in%c("0","1","2","3","4")){ 
-    plot(pl_weigths)
+    #plot(pl_weigths)
+    plot_list<-list.append(plot_list,pl_weigths)
   }
-  plot(plot_vs)
-  
-  dev.off()
+  #plot(plot_vs)
+  plot_list<-list.append(plot_list,plot_vs)
+ # dev.off()
 #chain=fit$chains$kgibbs,
   return(list(trace=trace,
               idx=idx,K=fit$chains$kgibbs[it,],
-              alpha=alpha.DP,alpha.chains=alpha.chains,pk_val=pk, pkN=pk_chains[,Ntr], 
+              alpha=alpha.DP,alpha.chains=alpha.chains,pk_val=pk, pkN=pk_chains[-c(1:burn),(Ntr-1)], 
               coeff_t=Sigma_true,coeff_f=sigma_mean,
-              err=err,fit=rmspe))
+              err=err,fit=rmspe, pl_list=plot_list))
 }
 
 ####### Just one possible test case
@@ -378,36 +385,59 @@ list3=list()
 list4=list()
 list5=list()
 list0=list()
-S_vec<-c(20,50,80,100)
-r_vec<-c(5,10,15,20)
+data_list=list()
+lk<-list()
+S_vec<-c(20,50,80)
+r_vec<-c(5,10,20)
 k<-1
-it<-5000
-burn<-2000
+it<-2000
+burn<-1000
 n_samples<-500
 Ktr<-4
 q<-20
 for(i in 1:length(S_vec)){
+  
   for(j in 1:length(r_vec)){
+    data_list=list()
     for(l in 1:10){
-    data_set<- generate_data(Sp=S_vec[i],nsamples=n_samples,qval=q,Ktrue=Ktr)
-    save(data_set, file = paste0("data/DS_S_",S_vec[i],"_q_",q,"_n_500_",Ktr,"l_",l,".Rda"))
-    
-    list<-list.append(list,assign(paste0("S_",S_vec[i],"_r_",r_vec[j],"_N_150_n_500_K_",Ktr,"l_",l),simulation_fun_oneDS(data_set,Sp=S_vec[i], Ntr=S_vec[i], q=20,rval=r_vec[j],nsamples=n_samples, Ktrue=Ktr,it=it,burn=burn,type="GJAM")))
-    names(list)[[k]]<-paste0("S_",S_vec[i],"_r_",r_vec[j],"_N_150_n_500_K_",Ktr,"l_",l)
-    list0<-list.append(list0,assign(paste0("S_",S_vec[i],"_r_",r_vec[j],"_N_150_n_500_K_",Ktr,"l_",l),simulation_fun_oneDS(data_set,Sp=S_vec[i], Ntr=S_vec[i], q=20,rval=r_vec[j],nsamples=n_samples, Ktrue=Ktr,it=it,burn=burn,type="0")))
-    names(list0)[[k]]<-paste0("S_",S_vec[i],"_r_",r_vec[j],"_N_150_n_500_K_",Ktr,"l_",l)
-    list2<-list.append(list2,assign(paste0("S_",S_vec[i],"_r_",r_vec[j],"_N_150_n_500_K",Ktr,"l_",l),simulation_fun_oneDS(data_set,Sp=S_vec[i], Ntr=150,q=20, rval=r_vec[j],nsamples=n_samples, Ktrue=Ktr,it=it,burn=burn,type="1")))
-    names(list2)[[k]]<-paste0("S_",S_vec[i],"_r_",r_vec[j],"_N_150_n_500_K",Ktr,"l_",l)
-    list3<-list.append(list3,assign(paste0("S_",S_vec[i],"_r_",r_vec[j],"_N_150_n_500_K",Ktr,"l_",l),simulation_fun_oneDS(data_set,Sp=S_vec[i], Ntr=S_vec[i],q=20, rval=r_vec[j],nsamples=n_samples, Ktrue=Ktr,it=it,burn=burn,type="2")))
-    names(list3)[[k]]<-paste0("S_",S_vec[i],"_r_",r_vec[j],"_N_150_n_500_K",Ktr,"l_",l)
-    list4<-list.append(list4,assign(paste0("S_",S_vec[i],"_r_",r_vec[j],"_N_150_n_500_K",Ktr,"l_",l),simulation_fun_oneDS(data_set,Sp=S_vec[i], Ntr=S_vec[i],q=20, rval=r_vec[j],nsamples=n_samples, Ktrue=Ktr,it=it,burn=burn,type="3")))
-    names(list4)[[k]]<-paste0("S_",S_vec[i],"_r_",r_vec[j],"_N_150_n_500_K",Ktr,"l_",l)
-    list5<-list.append(list5,assign(paste0("S_",S_vec[i],"_r_",r_vec[j],"_N_150_n_500_K",Ktr,"l_",l),simulation_fun_oneDS(data_set,Sp=S_vec[i], Ntr=S_vec[i],q=20, rval=r_vec[j],nsamples=n_samples, Ktrue=Ktr,it=it,burn=burn,type="4")))
-    names(list5)[[k]]<-paste0("S_",S_vec[i],"_r_",r_vec[j],"_N_150_n_500_K",Ktr,"l_",l)
+    data_list<- list.append(data_list,generate_data(Sp=S_vec[i],nsamples=n_samples,qval=q,Ktrue=Ktr))
+    names(data_list)[[l]]<-paste0("S_",S_vec[i],"_q_",q,"n_",n_samples,"_K_",Ktr,"_l",l)
+    }
+    save(data_list, file = paste0("data/DS_S_",S_vec[i],"_q_",q,"_n_500_",Ktr,".Rda"))
+########GJAM  model list########################    
+    l0<-list()
+    l0<- mclapply(data_list,simulation_fun_oneDS,Sp=S_vec[i], Ntr=S_vec[i], q=q,rval=r_vec[j],nsamples=n_samples, Ktrue=Ktr,it=it,burn=burn,type="GJAM")
+    list<-list.append(list,assign(paste0("S_",S_vec[i],"_r_",r_vec[j],"_N_",Ntr,"_n_",n_samples,"_K",Ktr),l0))
+    names(list)[[k]]<-paste0("S_",S_vec[i],"_r_",r_vec[j],"_N_",Ntr,"_n_",n_samples,"_K",Ktr)
+    ########gjam 0  model list########################
+    l00<-list()
+    l00<- mclapply(data_list,simulation_fun_oneDS,Sp=S_vec[i], Ntr=S_vec[i], q=q,rval=r_vec[j],nsamples=n_samples, Ktrue=Ktr,it=it,burn=burn,type="0")
+    list0<-list.append(list0,assign(paste0("S_",S_vec[i],"_r_",r_vec[j],"_N_150_n_500_K_",Ktr),l00))
+    names(list0)[[k]]<-paste0("S_",S_vec[i],"_r_",r_vec[j],"_N_150_n_500_K_",Ktr)
+    ########gjam 1  model list######################## 
+    l2<-list()
+    l2<- mclapply(data_list,simulation_fun_oneDS,Sp=S_vec[i], Ntr=150, q=q,rval=r_vec[j],nsamples=n_samples, Ktrue=Ktr,it=it,burn=burn,type="1")
+    list2<-list.append(list2,assign(paste0("S_",S_vec[i],"_r_",r_vec[j],"_N_150_n_500_K",Ktr),l2))
+    names(list2)[[k]]<-paste0("S_",S_vec[i],"_r_",r_vec[j],"_N_150_n_500_K",Ktr)
+    ########gjam 2  model list########################    
+    l3<-list()
+    l3<- mclapply(data_list,simulation_fun_oneDS,Sp=S_vec[i], Ntr=150, q=q,rval=r_vec[j],nsamples=n_samples, Ktrue=Ktr,it=it,burn=burn,type="2")
+    list3<-list.append(list3,assign(paste0("S_",S_vec[i],"_r_",r_vec[j],"_N_150_n_500_K",Ktr),l3))
+    names(list3)[[k]]<-paste0("S_",S_vec[i],"_r_",r_vec[j],"_N_150_n_500_K",Ktr)
+    ########gjam 3  model list########################    
+    l4<-list()
+    l4<- mclapply(data_list,simulation_fun_oneDS,Sp=S_vec[i], Ntr=S_vec[i], q=q,rval=r_vec[j],nsamples=n_samples, Ktrue=Ktr,it=it,burn=burn,type="3")
+    list4<-list.append(list4,assign(paste0("S_",S_vec[i],"_r_",r_vec[j],"_N_150_n_500_K",Ktr),l4))
+    names(list4)[[k]]<-paste0("S_",S_vec[i],"_r_",r_vec[j],"_N_150_n_500_K",Ktr)
+    ########gjam 4  model list########################    
+    l5<-list()
+    l5<- mclapply(data_list,simulation_fun_oneDS,Sp=S_vec[i], Ntr=S_vec[i], q=q,rval=r_vec[j],nsamples=n_samples, Ktrue=Ktr,it=it,burn=burn,type="4")
+    list5<-list.append(list5,assign(paste0("S_",S_vec[i],"_r_",r_vec[j],"_N_150_n_500_K",Ktr),l5))
+    names(list5)[[k]]<-paste0("S_",S_vec[i],"_r_",r_vec[j],"_N_150_n_500_K",Ktr)
     k=k+1
     }
   }
-}
+
 
 
 save(list, file = "ODSim_smallSK4_gjam.Rda")
