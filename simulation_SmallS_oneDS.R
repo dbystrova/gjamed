@@ -135,22 +135,26 @@ simulation_fun_oneDS<-function(data_set,Sp, Ntr, rval,nsamples=500, Ktrue,q=20, 
   }
   if(type=="3"){
     eps=0.05
-    alp_sig<-as.data.frame(matrix(NA,nrow=20,ncol=3))
-    colnames(alp_sig)<-c("alpha","sigma","is_less_150")
-    alp_sig$sigma=seq(0.05,0.5,length.out = 20)
-    #loop to run bisecetion on a grid for sigma
-    for(i in 1:20){
-      ####corrected formula : added -1
-      func<-function(x) {(x/alp_sig[i,"sigma"])*(prod((x+alp_sig[i,"sigma"]+c(1:S) -1)/(x+c(1:S) -1))-1) - K_t}
-      alp_sig[i,"alpha"]<-.bisec(func,0.01,100)
-      N_eps<-floor(.compute_tau_mean(alp_sig[i,"sigma"], alp_sig[i,"alpha"],eps) + 2*.compute_tau_var(alp_sig[i,"sigma"], alp_sig[i,"alpha"],eps))
-      ifelse(N_eps<=150,alp_sig[i,"is_less_150"]<-T,alp_sig[i,"is_less_150"]<-F)
-      N_eps
-    }
-    if(sum(alp_sig$is_less_150==T)==0) cat("!! no choice under N=150, need to recheck!!!")
-    k<-max(which(alp_sig$is_less_150==T)) #max sigma s.t. N<150
-    sigma_py<-alp_sig[i,"sigma"]
-    alpha.PY<-alp_sig[i,"alpha"]
+    # alp_sig<-as.data.frame(matrix(NA,nrow=20,ncol=3))
+    # colnames(alp_sig)<-c("alpha","sigma","is_less_150")
+    # alp_sig$sigma=seq(0.05,0.5,length.out = 20)
+    # #loop to run bisection on a grid for sigma
+    # for(i in 1:20){
+    #   ####corrected formula : added -1
+    #   func<-function(x) {(x/alp_sig[i,"sigma"])*(prod((x+alp_sig[i,"sigma"]+c(1:S) -1)/(x+c(1:S) -1))-1) - K_t}
+    #   alp_sig[i,"alpha"]<-.bisec(func,0.0001,100)
+    #   N_eps<-floor(.compute_tau_mean(alp_sig[i,"sigma"], alp_sig[i,"alpha"],eps) + 2*.compute_tau_var(alp_sig[i,"sigma"], alp_sig[i,"alpha"],eps))
+    #   ifelse(N_eps<=150,alp_sig[i,"is_less_150"]<-T,alp_sig[i,"is_less_150"]<-F)
+    #   N_eps
+    # }
+    # if(sum(alp_sig$is_less_150==T)==0) cat("!! no choice under N=150, need to recheck!!!")
+    # k<-min(which(alp_sig$is_less_150==T)) #max sigma s.t. N<150
+    # sigma_py<-alp_sig[k,"sigma"]
+    # alpha.PY<-alp_sig[k,"alpha"]
+    sigma_py<-0.25
+    funcPY_root<-function(x) {(x/sigma_py)*(prod((x+sigma_py+c(1:S) -1)/(x+c(1:S) -1))-1) - K_t}
+    alpha.PY<-.bisec(funcPY_root,0.0001,100)
+    
     
     N_eps<-floor(.compute_tau_mean(sigma_py,alpha.PY,eps) + 2*.compute_tau_var(sigma_py,alpha.PY,eps))
     rl   <- list(r = r, N = N_eps, sigma_py=sigma_py, alpha=alpha.PY)
@@ -162,7 +166,7 @@ simulation_fun_oneDS<-function(data_set,Sp, Ntr, rval,nsamples=500, Ktrue,q=20, 
     Ntr<-N_eps+1
   }
   if(type=="4"){
-    eps=0.05
+    eps=0.1
     alp_sig<-as.data.frame(matrix(NA,nrow=20,ncol=3))
     colnames(alp_sig)<-c("alpha","sigma","is_less_150")
     alp_sig$sigma=seq(0.05,0.4,length.out = 20)
@@ -179,16 +183,17 @@ simulation_fun_oneDS<-function(data_set,Sp, Ntr, rval,nsamples=500, Ktrue,q=20, 
     if(sum(alp_sig$is_less_150==T)==0) cat("!! no choice under N=150, need to recheck!!!")
     
     k<-max(which(alp_sig$is_less_150==T)) #max sigma s.t. N<150
-    sigma_py<-alp_sig[i,"sigma"]
-    alpha.PY<-alp_sig[i,"alpha"]
+    sigma_py<-alp_sig[k,"sigma"]
+    alpha.PY<-alp_sig[k,"alpha"]
     #fixing hyperparameters
     ro.disc=1-2* sigma_py
     shape=((alpha.PY)^2)/10
     rate=alpha.PY/10
     # 95% quantile of alpha
     alpha.max=qgamma(.95, shape=shape, rate=rate)
-    
-    N_eps<-floor(.compute_tau_mean(sigma_py,alpha.max,eps) + 2*.compute_tau_var(sigma_py,alpha.max,eps))
+    alpha.max_val<-5
+    sigma_py_max<-0.5
+    N_eps<-floor(.compute_tau_mean(sigma_py_max,alpha.max_val,eps) + 2*.compute_tau_var(sigma_py_max,alpha.max_val,eps))
     
     
     rl   <- list(r = r, N = N_eps,rate=rate,shape=shape,V1=1,ro.disc=ro.disc) #here to modify N
@@ -337,11 +342,11 @@ simulation_fun_oneDS<-function(data_set,Sp, Ntr, rval,nsamples=500, Ktrue,q=20, 
   plot(plot_vs)
   
   dev.off()
-
-  return(list(trace=trace, chain=fit$chains$kgibbs,
+#chain=fit$chains$kgibbs,
+  return(list(trace=trace,
               idx=idx,K=fit$chains$kgibbs[it,],
-              alpha=alpha.DP,alpha.chains=alpha.chains,pk_chain=pk_chains, 
-              coeff_t=Sigma_true,coeff_f=sigma,
+              alpha=alpha.DP,alpha.chains=alpha.chains,pk_val=pk, pkN=pk_chains[,Ntr], 
+              coeff_t=Sigma_true,coeff_f=sigma_mean,
               err=err,fit=rmspe))
 }
 
@@ -379,24 +384,27 @@ it<-5000
 burn<-2000
 n_samples<-500
 Ktr<-4
+q<-20
 for(i in 1:length(S_vec)){
   for(j in 1:length(r_vec)){
-    data_set<- generate_data(Sp=S_vec[i],nsamples=n_samples,qval=q,Ktrue=Ktrue)
-    save(data_set, file = paste0("data/DS_S_",S_vec[i],"_q_",q,"_n_500_",Ktrue,"_.Rda"))
+    for(l in 1:10){
+    data_set<- generate_data(Sp=S_vec[i],nsamples=n_samples,qval=q,Ktrue=Ktr)
+    save(data_set, file = paste0("data/DS_S_",S_vec[i],"_q_",q,"_n_500_",Ktr,"l_",l,".Rda"))
     
-    list<-list.append(list,assign(paste0("S_",S_vec[i],"_r_",r_vec[j],"_N_150_n_500_Kt_4_T_0"),simulation_fun_oneDS(data_set,Sp=S_vec[i], Ntr=S_vec[i], q=20,rval=r_vec[j],nsamples=n_samples, Ktrue=4,it=it,burn=burn,type="GJAM")))
-    names(list)[[k]]<-paste0("S_",S_vec[i],"_r_",r_vec[j],"_N_150_n_500_Kt_4_T0")
-    list0<-list.append(list0,assign(paste0("S_",S_vec[i],"_r_",r_vec[j],"_N_150_n_500_Kt_4_T_0"),simulation_fun_oneDS(data_set,Sp=S_vec[i], Ntr=S_vec[i], q=20,rval=r_vec[j],nsamples=n_samples, Ktrue=4,it=it,burn=burn,type="0")))
-    names(list0)[[k]]<-paste0("S_",S_vec[i],"_r_",r_vec[j],"_N_150_n_500_Kt_4_T0")
-    list2<-list.append(list2,assign(paste0("S_",S_vec[i],"_r_",r_vec[j],"_N_150_n_500_Kt_4_T_0"),simulation_fun_oneDS(data_set,Sp=S_vec[i], Ntr=150,q=20, rval=r_vec[j],nsamples=n_samples, Ktrue=4,it=it,burn=burn,type="1")))
-    names(list2)[[k]]<-paste0("S_",S_vec[i],"_r_",r_vec[j],"_N_150_n_500_Kt_4_T0")
-    list3<-list.append(list3,assign(paste0("S_",S_vec[i],"_r_",r_vec[j],"_N_150_n_500_Kt_4_T_0"),simulation_fun_oneDS(data_set,Sp=S_vec[i], Ntr=S_vec[i],q=20, rval=r_vec[j],nsamples=n_samples, Ktrue=4,it=it,burn=burn,type="2")))
-    names(list3)[[k]]<-paste0("S_",S_vec[i],"_r_",r_vec[j],"_N_150_n_500_Kt_4_T0")
-    list4<-list.append(list4,assign(paste0("S_",S_vec[i],"_r_",r_vec[j],"_N_150_n_500_Kt_4_T_0"),simulation_fun_oneDS(data_set,Sp=S_vec[i], Ntr=S_vec[i],q=20, rval=r_vec[j],nsamples=n_samples, Ktrue=4,it=it,burn=burn,type="3")))
-    names(list4)[[k]]<-paste0("S_",S_vec[i],"_r_",r_vec[j],"_N_150_n_500_Kt_4_T0")
-    list5<-list.append(list5,assign(paste0("S_",S_vec[i],"_r_",r_vec[j],"_N_150_n_500_Kt_4_T_0"),simulation_fun_oneDS(data_set,Sp=S_vec[i], Ntr=S_vec[i],q=20, rval=r_vec[j],nsamples=n_samples, Ktrue=4,it=it,burn=burn,type="4")))
-    names(list5)[[k]]<-paste0("S_",S_vec[i],"_r_",r_vec[j],"_N_150_n_500_Kt_4_T0")
+    list<-list.append(list,assign(paste0("S_",S_vec[i],"_r_",r_vec[j],"_N_150_n_500_K_",Ktr,"l_",l),simulation_fun_oneDS(data_set,Sp=S_vec[i], Ntr=S_vec[i], q=20,rval=r_vec[j],nsamples=n_samples, Ktrue=Ktr,it=it,burn=burn,type="GJAM")))
+    names(list)[[k]]<-paste0("S_",S_vec[i],"_r_",r_vec[j],"_N_150_n_500_K_",Ktr,"l_",l)
+    list0<-list.append(list0,assign(paste0("S_",S_vec[i],"_r_",r_vec[j],"_N_150_n_500_K_",Ktr,"l_",l),simulation_fun_oneDS(data_set,Sp=S_vec[i], Ntr=S_vec[i], q=20,rval=r_vec[j],nsamples=n_samples, Ktrue=Ktr,it=it,burn=burn,type="0")))
+    names(list0)[[k]]<-paste0("S_",S_vec[i],"_r_",r_vec[j],"_N_150_n_500_K_",Ktr,"l_",l)
+    list2<-list.append(list2,assign(paste0("S_",S_vec[i],"_r_",r_vec[j],"_N_150_n_500_K",Ktr,"l_",l),simulation_fun_oneDS(data_set,Sp=S_vec[i], Ntr=150,q=20, rval=r_vec[j],nsamples=n_samples, Ktrue=Ktr,it=it,burn=burn,type="1")))
+    names(list2)[[k]]<-paste0("S_",S_vec[i],"_r_",r_vec[j],"_N_150_n_500_K",Ktr,"l_",l)
+    list3<-list.append(list3,assign(paste0("S_",S_vec[i],"_r_",r_vec[j],"_N_150_n_500_K",Ktr,"l_",l),simulation_fun_oneDS(data_set,Sp=S_vec[i], Ntr=S_vec[i],q=20, rval=r_vec[j],nsamples=n_samples, Ktrue=Ktr,it=it,burn=burn,type="2")))
+    names(list3)[[k]]<-paste0("S_",S_vec[i],"_r_",r_vec[j],"_N_150_n_500_K",Ktr,"l_",l)
+    list4<-list.append(list4,assign(paste0("S_",S_vec[i],"_r_",r_vec[j],"_N_150_n_500_K",Ktr,"l_",l),simulation_fun_oneDS(data_set,Sp=S_vec[i], Ntr=S_vec[i],q=20, rval=r_vec[j],nsamples=n_samples, Ktrue=Ktr,it=it,burn=burn,type="3")))
+    names(list4)[[k]]<-paste0("S_",S_vec[i],"_r_",r_vec[j],"_N_150_n_500_K",Ktr,"l_",l)
+    list5<-list.append(list5,assign(paste0("S_",S_vec[i],"_r_",r_vec[j],"_N_150_n_500_K",Ktr,"l_",l),simulation_fun_oneDS(data_set,Sp=S_vec[i], Ntr=S_vec[i],q=20, rval=r_vec[j],nsamples=n_samples, Ktrue=Ktr,it=it,burn=burn,type="4")))
+    names(list5)[[k]]<-paste0("S_",S_vec[i],"_r_",r_vec[j],"_N_150_n_500_K",Ktr,"l_",l)
     k=k+1
+    }
   }
 }
 
