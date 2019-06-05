@@ -15,7 +15,7 @@ library(Rcpp)
 library(plyr)
 library(ggplot2)
 library(ggsn)
-library(parallel)detectCores()
+library(parallel)
 Rcpp::sourceCpp('src/cppFns.cpp')
 source("R/gjamHfunctions_mod.R")
 source("R/simple_gjam_0.R")
@@ -99,6 +99,7 @@ simulation_fun_oneDS<-function(data_set,Sp, Ntr, rval,nsamples=500, Ktrue,q=20, 
     alpha.chains<-NULL
     alpha.DP<-S
     pk_chains<-NULL
+    pk<-NULL
   }
   
   
@@ -135,7 +136,7 @@ simulation_fun_oneDS<-function(data_set,Sp, Ntr, rval,nsamples=500, Ktrue,q=20, 
     pk_chains<- fit$chains$pk_g
   }
   if(type=="3"){
-    eps=0.05
+    eps=0.01
     # alp_sig<-as.data.frame(matrix(NA,nrow=20,ncol=3))
     # colnames(alp_sig)<-c("alpha","sigma","is_less_150")
     # alp_sig$sigma=seq(0.05,0.5,length.out = 20)
@@ -451,6 +452,179 @@ save(list5, file = "ODSim_smallSK4_type4.Rda")
 
 
 
+#####################################Simulation 2 K=10#######################################
+
+
+
+####Small S, N==S, n=500
+
+list=list()
+list2=list()
+list3=list()
+list4=list()
+list5=list()
+list0=list()
+data_list=list()
+lk<-list()
+S_vec<-c(20,50,80)
+r_vec<-c(5,10,20)
+k<-1
+it<-2000
+burn<-1000
+n_samples<-500
+Ktr<-10
+q<-20
+for(i in 1:length(S_vec)){
+  for(l in 1:10){
+    data_list=list()
+    data_list<- list.append(data_list,generate_data(Sp=S_vec[i],nsamples=n_samples,qval=q,Ktrue=Ktr))
+    names(data_list)[[l]]<-paste0("S_",S_vec[i],"_q_",q,"n_",n_samples,"_K_",Ktr,"_l",l)
+    save(data_list, file = paste0("data/DS_S_",S_vec[i],"_q_",q,"_n_500_",Ktr,".Rda"))
+  for(j in 1:length(r_vec)){
+     ########GJAM  model list########################    
+    l0<-list()
+    l0<- mclapply(data_list,simulation_fun_oneDS,Sp=S_vec[i], Ntr=S_vec[i], q=q,rval=r_vec[j],nsamples=n_samples, Ktrue=Ktr,it=it,burn=burn,type="GJAM")
+    list<-list.append(list,assign(paste0("S_",S_vec[i],"_r_",r_vec[j],"_N_",Ntr,"_n_",n_samples,"_K",Ktr),l0))
+    names(list)[[k]]<-paste0("S_",S_vec[i],"_r_",r_vec[j],"_N_",Ntr,"_n_",n_samples,"_K",Ktr)
+    ########gjam 0  model list########################
+    l00<-list()
+    l00<- mclapply(data_list,simulation_fun_oneDS,Sp=S_vec[i], Ntr=S_vec[i], q=q,rval=r_vec[j],nsamples=n_samples, Ktrue=Ktr,it=it,burn=burn,type="0")
+    list0<-list.append(list0,assign(paste0("S_",S_vec[i],"_r_",r_vec[j],"_N_150_n_500_K_",Ktr),l00))
+    names(list0)[[k]]<-paste0("S_",S_vec[i],"_r_",r_vec[j],"_N_150_n_500_K_",Ktr)
+    ########gjam 1  model list######################## 
+    l2<-list()
+    l2<- mclapply(data_list,simulation_fun_oneDS,Sp=S_vec[i], Ntr=150, q=q,rval=r_vec[j],nsamples=n_samples, Ktrue=Ktr,it=it,burn=burn,type="1")
+    list2<-list.append(list2,assign(paste0("S_",S_vec[i],"_r_",r_vec[j],"_N_150_n_500_K",Ktr),l2))
+    names(list2)[[k]]<-paste0("S_",S_vec[i],"_r_",r_vec[j],"_N_150_n_500_K",Ktr)
+    ########gjam 2  model list########################    
+    l3<-list()
+    l3<- mclapply(data_list,simulation_fun_oneDS,Sp=S_vec[i], Ntr=150, q=q,rval=r_vec[j],nsamples=n_samples, Ktrue=Ktr,it=it,burn=burn,type="2")
+    list3<-list.append(list3,assign(paste0("S_",S_vec[i],"_r_",r_vec[j],"_N_150_n_500_K",Ktr),l3))
+    names(list3)[[k]]<-paste0("S_",S_vec[i],"_r_",r_vec[j],"_N_150_n_500_K",Ktr)
+    ########gjam 3  model list########################    
+    l4<-list()
+    l4<- mclapply(data_list,simulation_fun_oneDS,Sp=S_vec[i], Ntr=S_vec[i], q=q,rval=r_vec[j],nsamples=n_samples, Ktrue=Ktr,it=it,burn=burn,type="3")
+    list4<-list.append(list4,assign(paste0("S_",S_vec[i],"_r_",r_vec[j],"_N_150_n_500_K",Ktr),l4))
+    names(list4)[[k]]<-paste0("S_",S_vec[i],"_r_",r_vec[j],"_N_150_n_500_K",Ktr)
+    ########gjam 4  model list########################    
+    l5<-list()
+    l5<- mclapply(data_list,simulation_fun_oneDS,Sp=S_vec[i], Ntr=S_vec[i], q=q,rval=r_vec[j],nsamples=n_samples, Ktrue=Ktr,it=it,burn=burn,type="4")
+    list5<-list.append(list5,assign(paste0("S_",S_vec[i],"_r_",r_vec[j],"_N_150_n_500_K",Ktr),l5))
+    names(list5)[[k]]<-paste0("S_",S_vec[i],"_r_",r_vec[j],"_N_150_n_500_K",Ktr)
+    k=k+1
+  }
+  }  
+}
+
+
+
+save(list, file = "ODSim_smallSK10_gjam.Rda")
+save(list0, file = "ODSim_smallSK10_gjam0.Rda")
+save(list2, file = "ODSim_smallSK10_type1.Rda")
+save(list3, file = "ODSim_smallSK10_type2.Rda")
+save(list4, file = "ODSim_smallSK10_type3.Rda")
+save(list5, file = "ODSim_smallSK10_type4.Rda")
+
+
+
+
+#####################################Plots#######################################
+
+
+LtGJ <- load_object("ODSim_smallSK4_gjam.Rda")
+Ltgj0<- load_object( "ODSim_smallSK4_gjam0.Rda")
+LtT1<-load_object("ODSim_smallSK4_type1.Rda")
+LtT2<-load_object("ODSim_smallSK4_type2.Rda")
+LtT3<-load_object("ODSim_smallSK4_type3.Rda")
+LtT4<-load_object("ODSim_smallSK4_type4.Rda")
+
+
+
+
+
+S_vec<-c(20,50,80)
+r_vec<-c(5,10,20)
+
+table_comp<-as.data.frame(matrix(NA, nrow=length(r_vec)*length(S_vec)*5, ncol=1))
+table_comp$S<- rep(S_vec, each=4*5)
+table_comp$mod<- rep(c("gjam","gjam1","gjam2","gjam3","gjam4"), 4*4)
+table_comp$num<- rep(1:9, each=50)
+table_comp$rv<- rep(c(5,10,20), each=50, 3)
+burn<-1000
+it<- 2000
+nsamples<-500
+for(i in (1: nrow(table_comp))){
+  j<-table_comp$num[i]
+  table_comp$Schar[i]<- paste0("S=",table_comp$S[i])
+  if((table_comp$mod[i]=="gjam")&(length(grep(paste0("r_",table_comp$rv[i]),names(LtGJ)[j]))>0)){ table_comp$res[i]<- mean(LtGJ[[j]]$trace[-c(1:burn)])}
+  if((table_comp$mod[i]=="gjam1")&(length(grep(paste0("r_",table_comp$rv[i]),names(LtT1)[j]))>0)){ table_comp$res[i]<-  mean(LtT1[[j]]$trace[-c(1:burn)])}
+  if((table_comp$mod[i]=="gjam2")&(length(grep(paste0("r_",table_comp$rv[i]),names(LtT2)[j]))>0)){ table_comp$res[i]<- mean(LtT2[[j]]$trace[-c(1:burn)])}
+  if((table_comp$mod[i]=="gjam3")&(length(grep(paste0("r_",table_comp$rv[i]),names(LtT3)[j]))>0)){ table_comp$res[i]<-  mean(LtT3[[j]]$trace[-c(1:burn)])}
+  if((table_comp$mod[i]=="gjam4")&(length(grep(paste0("r_",table_comp$rv[i]),names(LtT4)[j]))>0)){ table_comp$res[i]<- mean(LtT4[[j]]$trace[-c(1:burn)])}
+  
+  if((table_comp$mod[i]=="gjam")&(length(grep(paste0("r_",table_comp$rv[i]),names(Ltgj0)[j]))>0)){ 
+    table_comp$lweight[i]<- apply(Ltgj0[[j]]$pk_chain[-c(1:burn),],2,mean)[length(apply(Ltgj0[[j]]$pk_chain,2,mean))]
+    table_comp$fit_err[i]<- Ltgj0[[j]]$fit
+    table_comp$err[i]<- Ltgj0[[j]]$err
+  }
+  if((table_comp$mod[i]=="gjam1")&(length(grep(paste0("r_",table_comp$rv[i]),names(LtT1)[j]))>0)){
+    table_comp$lweight[i]<-  apply(LtT1[[j]]$pk_chain[-c(1:burn),],2,mean)[length(apply(LtT1[[j]]$pk_chain,2,mean))]
+    table_comp$fit_err[i]<- LtT1[[j]]$fit
+    table_comp$err[i]<- LtT1[[j]]$err
+  }
+  if((table_comp$mod[i]=="gjam2")&(length(grep(paste0("r_",table_comp$rv[i]),names(LtT2)[j]))>0)){
+    table_comp$lweight[i]<- apply(LtT2[[j]]$pk_chain[-c(1:burn),],2,mean)[length(apply(LtT2[[j]]$pk_chain,2,mean))]
+    table_comp$fit_err[i]<- LtT2[[j]]$fit
+    table_comp$err[i]<- LtT2[[j]]$err
+  }
+  if((table_comp$mod[i]=="gjam3")&(length(grep(paste0("r_",table_comp$rv[i]),names(LtT3)[j]))>0)){ 
+    table_comp$lweight[i]<-  apply(LtT3[[j]]$pk_chain[-c(1:burn),],2,mean)[length(apply(LtT3[[j]]$pk_chain,2,mean))]
+    table_comp$fit_err[i]<- LtT3[[j]]$fit
+    table_comp$err[i]<- LtT3[[j]]$err
+  }
+  if((table_comp$mod[i]=="gjam4")&(length(grep(paste0("r_",table_comp$rv[i]),names(LtT4)[j]))>0)){ 
+    table_comp$lweight[i]<- apply(LtT4[[j]]$pk_chain[-c(1:burn),],2,mean)[length(apply(LtT4[[j]]$pk_chain,2,mean))]
+    table_comp$fit_err[i]<- LtT4[[j]]$fit
+    table_comp$err[i]<- LtT4[[j]]$err
+  }
+  
+}
+
+table_comp$Schar <- factor(table_comp$Schar, levels=c('S=20','S=50','S=80','S=100'))
+table_comp<-table_comp[,-1]
+p <- ggplot(data= table_comp)
+q<- p +aes(x=rv,y= res, colour = mod) + geom_point(size = 2) +facet_wrap( ~ Schar, strip.position = "bottom", scales = "free_x")+ ylab("Posterior mean") + xlab("S and r values")+ylim(c(0,10))+
+  labs(title="Ability to recover true number of groups for all models", caption=paste0("Number of iterations: ",it," burnin: ",burn," number of samples: ",nsamples))+
+  geom_hline(yintercept = 8,color = "red")+theme_bw()+theme(panel.spacing = unit(0, "lines"),
+                                                            strip.background = element_blank(),
+                                                            strip.placement = "outside",legend.position = "top", plot.title = element_text(hjust = 0.5))
+q
+
+
+p <- ggplot(data= table_comp)
+q<- p +aes(x=rv,y= lweight, colour = mod) + geom_point( size = 2) +facet_wrap( ~ Schar, strip.position = "bottom", scales = "free_x")+ ylab("Posterior mean") + xlab("S and r values")+ylim(c(0,0.3))+
+  labs(title="Last p_k weight value for all models", caption=paste0("Number of iterations: ",it," burnin: ",burn," number of samples: ",nsamples))+theme_bw()+theme(panel.spacing = unit(0, "lines"),
+                                                                                                                                                                    strip.background = element_blank(),
+                                                                                                                                                                    strip.placement = "outside",legend.position = "top", plot.title = element_text(hjust = 0.5))
+q
+
+
+
+
+
+
+p <- ggplot(data= table_comp)
+q<- p +aes(x=rv,y= fit_err, colour = mod) + geom_point( size = 2) +facet_wrap( ~ Schar, strip.position = "bottom", scales = "free_x")+ ylab("Posterior mean") + xlab("S and r values")+ylim(c(0,max(table_comp$fit_err)))+
+  labs(title="Fit error value for all models", caption=paste0("Number of iterations: ",it," burnin: ",burn," number of samples: ",nsamples))+theme_bw()+theme(panel.spacing = unit(0, "lines"),
+                                                                                                                                                              strip.background = element_blank(),                                                                                                                                                                    strip.placement = "outside",legend.position = "top", plot.title = element_text(hjust = 0.5))
+q
+
+
+p <- ggplot(data= table_comp)
+q<- p +aes(x=rv,y= err, colour = mod) + geom_point( size = 2) +facet_wrap( ~ Schar, strip.position = "bottom", scales = "free_x")+ ylab("Posterior mean") + xlab("S and r values")+ylim(c(0,max(table_comp$err)))+
+  labs(title="RMSE error between estimated and true covariance matrix for all models", caption=paste0("Number of iterations: ",it," burnin: ",burn," number of samples: ",nsamples))+theme_bw()+theme(panel.spacing = unit(0, "lines"),
+                                                                                                                                                                                                      strip.background = element_blank(),                                                                                                                                                                    strip.placement = "outside",legend.position = "top", plot.title = element_text(hjust = 0.5))
+q
 
 
 
