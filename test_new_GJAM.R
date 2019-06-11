@@ -27,22 +27,30 @@ formula <- as.formula( ~ temp*deficit + I(temp^2) + I(deficit^2) )
 y  <- gjamReZero(forestTraits$treesDeZero)  # extract y
 treeYdata  <- gjamTrimY(y,10)$y             # at least 10 plots
 
+rl <- list(r = 8, N = 20)
 rl1 <- list(r = 8, N = 20,rate=10,shape=10)
 rl2  <- list(r = 8, N = 20,rate=10,shape=10,V=1) #here to modify N
 N_eps<-floor(.compute_tau_mean(0.3,2,0.1) + 2*.compute_tau_var(0.3,2,0.1))
 rl3   <- list(r = 8, N = N_eps, sigma_py=0.3, alpha=2)
 N_eps<-floor(.compute_tau_mean(0.5,10,0.1) + 2*.compute_tau_var(0.5,10,0.1))
-rl4   <- list(r = 8, N = 20,rate=10,shape=10,V1=1,ro.disc=0.5) #here to modify N
+rl4   <- list(r = 8, N = N_eps,rate=10,shape=10,V1=1,ro.disc=0.5) #here to modify N
 
-ml   <- list(ng = 1000, burnin = 500, typeNames = 'DA', reductList = rl4) #change ml
+ml4   <- list(ng = 1000, burnin = 500, typeNames = 'DA', reductList = rl4) #change ml
+ml3   <- list(ng = 1000, burnin = 500, typeNames = 'DA', reductList = rl3) #change ml
+ml2   <- list(ng = 1000, burnin = 500, typeNames = 'DA', reductList = rl2) #change ml
+ml1   <- list(ng = 1000, burnin = 500, typeNames = 'DA', reductList = rl1) #change ml
+ml   <- list(ng = 1000, burnin = 500, typeNames = 'DA', reductList = rl) #change ml
 
 form <- as.formula( ~ temp*deficit + I(temp^2) + I(deficit^2) )
 
-fit<-.gjam_1(form, xdata = xdata, ydata = treeYdata, modelList = ml)
-fit<-.gjam_2(form, xdata = xdata, ydata = treeYdata, modelList = ml)
-fit <- .gjam_3(form,xdata,treeYdata,ml)
-fit<-.gjam_4(form, xdata = xdata, ydata = treeYdata, modelList = ml)
+fit<-gjam(form, xdata = xdata, ydata = treeYdata, modelList = ml)
+fit1<-.gjam_1(form, xdata = xdata, ydata = treeYdata, modelList = ml1)
+fit2<-.gjam_2(form, xdata = xdata, ydata = treeYdata, modelList = ml2)
+fit3 <- .gjam_3(form,xdata,treeYdata,ml3)
+fit4<-.gjam_4(form, xdata = xdata, ydata = treeYdata, modelList = ml4)
 
+fit$fit$rmspeAll
+fit4$fit$rmspeAll
 
 alpha<-fit$chains$alpha.PY_g[seq(from=200,to=length(fit$chains$alpha.PY_g),by=20)]
 alpha<-mcmc(alpha)

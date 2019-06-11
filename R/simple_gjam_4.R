@@ -434,9 +434,9 @@
     otherpar$ro.disc<-ro.disc
     
     
-    #sample p given a and b
+    #samplea p given a and b
     #otherpar$pvec     <- .sampleP(N=N, avec=rep(1 ,(N-1)),
-    #                              bvec= rep(alpha.PY,N-1), K=otherpar$K)
+    #                              bvec= rep(alpha.PYN-1), K=otherpar$K)
     kgibbs <- matrix(1,ng,S)
     sgibbs <- matrix(0,ng, N*r) #sigma?
     nnames <- paste('N',1:N,sep='-')
@@ -445,7 +445,6 @@
     sigErrGibbs <- rep(0,ng) #standard deviad
     alpha.PY_g<-rep(0,ng)
     discount.PY_g<-rep(0,ng)
-    pk_g<-matrix(1,ng,N)
     
     rndEff <- w*0
     
@@ -844,7 +843,7 @@
       sigErrGibbs[g]      <- sigmaerror
       alpha.PY_g[g]       <- otherpar$alpha.PY
       discount.PY_g[g]       <- otherpar$discount.PY
-      pk_g[g,]              <-otherpar$pvec
+      
       
       
       if(length(corCols) > 0){
@@ -1739,7 +1738,7 @@
   }
   if(REDUCT) {
     parameters <- append(parameters, list(rndEff = rndTot/ntot))#, specRand = specRand))
-    chains <- append(chains,list(kgibbs = kgibbs, sigErrGibbs = sigErrGibbs,alpha.PY_g=alpha.PY_g,discount.PY_g=discount.PY_g,pk_g=pk_g))
+    chains <- append(chains,list(kgibbs = kgibbs, sigErrGibbs = sigErrGibbs,alpha.PY_g=alpha.PY_g,discount.PY_g=discount.PY_g))
   }
   
   if('OC' %in% typeNames){
@@ -1911,14 +1910,14 @@ g_func<- function(alpha, sigma, N){
 }
 
 lik.alpha.fun<-function(alpha,pvec,N,shape,rate,discount){
-  tmp<-sum(log(gamma(alpha+1+discount*(c(1:(N-1))-1)))-log(gamma((alpha+discount*c(1:(N-1))))))+alpha*log(pvec[N])+(shape-1)*log(alpha)-rate*alpha
+  tmp<-sum(lgamma(alpha+1+discount*(c(1:(N-1))-1))-lgamma((alpha+discount*c(1:(N-1)))))+alpha*log(pvec[N])+(shape-1)*log(alpha)-rate*alpha
   #tmp<-g_func(alpha,discount,N)*pvec[length(pvec)]^(alpha)*alpha^(shape-1)*exp(-rate*alpha)
   return(tmp)
 }
   
 
 lik.disc.fun<-function(discount,pvec,N,ro.disc,alpha){
-  tmp<- (-N*log(gamma(1-discount)))+sum(log(gamma(alpha+1+discount*(c(1:(N-1))-1)))-log(gamma((alpha+discount*c(1:(N-1))))))-discount*sum(log(pvec[1:(N-1)]))+discount*(N-1)*pvec[N]+log(ro.disc*ifelse(discount==0,1,0)+2*(1-ro.disc)*ifelse((discount<=0.5 & discount>0),1,0))
+  tmp<- (-N*lgamma(1-discount))+sum(lgamma(alpha+1+discount*(c(1:(N-1))-1))-lgamma((alpha+discount*c(1:(N-1)))))-discount*sum(log(pvec[1:(N-1)]))+discount*(N-1)*log(pvec[N])+log(ro.disc*ifelse(discount==0,1,0)+2*(1-ro.disc)*ifelse((discount<=0.5 & discount>0),1,0))
   #tmp<-(1/(gamma(1-discount)^N))*g_func(alpha,discount,N)*prod(pvec[1:(N-1)]^(-discount))*(pvec[length(pvec)]^(discount*(N-1)))*(ro.disc*ifelse(discount==0,1,0)+2*(1-ro.disc)*ifelse((discount<=0.5 & discount>0),1,0))
   return(tmp)
 }
