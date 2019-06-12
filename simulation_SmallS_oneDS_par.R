@@ -18,6 +18,8 @@ library(parallel)
 Rcpp::sourceCpp('src/cppFns.cpp')
 source("R/gjamHfunctions_mod.R")
 source("R/simple_gjam_0.R")
+source("R/simple_gjam_00.R")
+
 source("R/simple_gjam_1.R")
 source("R/simple_gjam_2.R")
 source("R/simple_gjam_3.R")
@@ -541,30 +543,96 @@ for(i in 1:length(S_vec)){
  save(list4, file = "ODSim_mediumSK10_type3.Rda")
  save(list5, file = "ODSim_mediumSK10_type4.Rda")
 
+########################################################################
+ 
+ 
+ list=list()
+ list2=list()
+ list3=list()
+ list4=list()
+ list5=list()
+ list0=list()
+ data_list=list()
+ lk<-list()
+ S_vec<-c(1000)
+ r_vec<-c(5)
+ k<-1
+ it<-2000
+ burn<-1000
+ n_samples<-500
+ Ktr<-10
+ q<-20
+ 
 
+ for(i in 1:length(S_vec)){
+   for(j in 1:length(r_vec)){
+     data_list=list()
+     for(l in 1:5){
+       data_list<- list.append(data_list,generate_data(Sp=S_vec[i],nsamples=n_samples,qval=q,Ktrue=Ktr))
+       names(data_list)[[l]]<-paste0("S_",S_vec[i],"_q_",q,"n_",n_samples,"_K_",Ktr,"_l",l)
+     }
+     save(data_list, file = paste0("data/DS_S_",S_vec[i],"_q_",q,"_n_500_",Ktr,".Rda"))
+     N_trunc<-min(S_vec[i],150)
+     ########GJAM  model list########################    
+     # l0<-list()
+     # l0<- mclapply(data_list,simulation_fun_oneDS,Sp=S_vec[i], Ntr=N_trunc, q=q,rval=r_vec[j],nsamples=n_samples, Ktrue=Ktr,it=it,burn=burn,type="GJAM")
+     # list<-list.append(list,assign(paste0("S_",S_vec[i],"_r_",r_vec[j],"_N_",S_vec[i],"_n_",n_samples,"_K",Ktr),l0))
+     # names(list)[[k]]<-paste0("S_",S_vec[i],"_r_",r_vec[j],"_N_",S_vec[i],"_n_",n_samples,"_K",Ktr)
+     # ########gjam 0  model list########################
+     # l00<-list()
+     # l00<- lapply(data_list,simulation_fun_oneDS,Sp=S_vec[i], Ntr=N_trunc, q=q,rval=r_vec[j],nsamples=n_samples, Ktrue=Ktr,it=it,burn=burn,type="0")
+     # list0<-list.append(list0,assign(paste0("S_",S_vec[i],"_r_",r_vec[j],"_N_150_n_500_K_",Ktr),l00))
+     # names(list0)[[k]]<-paste0("S_",S_vec[i],"_r_",r_vec[j],"_N_150_n_500_K_",Ktr)
+     ########gjam 1  model list######################## 
+     l2<-list()
+     l2<- mclapply(data_list,simulation_fun_oneDS,Sp=S_vec[i], Ntr=N_trunc, q=q,rval=r_vec[j],nsamples=n_samples, Ktrue=Ktr,it=it,burn=burn,type="1")
+     list2<-list.append(list2,assign(paste0("S_",S_vec[i],"_r_",r_vec[j],"_N_150_n_500_K",Ktr),l2))
+     names(list2)[[k]]<-paste0("S_",S_vec[i],"_r_",r_vec[j],"_N_150_n_500_K",Ktr)
+     # ########gjam 2  model list########################    
+     # l3<-list()
+     # l3<- mclapply(data_list,simulation_fun_oneDS,Sp=S_vec[i], Ntr=150, q=q,rval=r_vec[j],nsamples=n_samples, Ktrue=Ktr,it=it,burn=burn,type="2")
+     # list3<-list.append(list3,assign(paste0("S_",S_vec[i],"_r_",r_vec[j],"_N_150_n_500_K",Ktr),l3))
+     # names(list3)[[k]]<-paste0("S_",S_vec[i],"_r_",r_vec[j],"_N_150_n_500_K",Ktr)
+     # ########gjam 3  model list########################    
+     # l4<-list()
+     # l4<- mclapply(data_list,simulation_fun_oneDS,Sp=S_vec[i], Ntr=150, q=q,rval=r_vec[j],nsamples=n_samples, Ktrue=Ktr,it=it,burn=burn,type="3")
+     # list4<-list.append(list4,assign(paste0("S_",S_vec[i],"_r_",r_vec[j],"_N_150_n_500_K",Ktr),l4))
+     # names(list4)[[k]]<-paste0("S_",S_vec[i],"_r_",r_vec[j],"_N_150_n_500_K",Ktr)
+     # ########gjam 4  model list########################    
+     # l5<-list()
+     # l5<- mclapply(data_list,simulation_fun_oneDS,Sp=S_vec[i], Ntr=S_vec[i], q=q,rval=r_vec[j],nsamples=n_samples, Ktrue=Ktr,it=it,burn=burn,type="4")
+     # list5<-list.append(list5,assign(paste0("S_",S_vec[i],"_r_",r_vec[j],"_N_150_n_500_K",Ktr),l5))
+     # names(list5)[[k]]<-paste0("S_",S_vec[i],"_r_",r_vec[j],"_N_150_n_500_K",Ktr)
+     k=k+1
+   }
+ }
+ 
+ 
+ save(list0, file = "ODSim_smallS1000K10_gjam0.Rda")
+ 
 
 
 #####################################Plots#######################################
 
 
-LtGJ <- load_object("ODSim_smallSK4_gjam.Rda")
-Ltgj0<- load_object( "ODSim_smallSK4_gjam0.Rda")
-LtT1<-load_object("ODSim_smallSK4_type1.Rda")
-LtT2<-load_object("ODSim_smallSK4_type2.Rda")
-LtT3<-load_object("ODSim_smallSK4_type3.Rda")
-LtT4<-load_object("ODSim_smallSK4_type4.Rda")
+#LtGJ <- load_object("ODSim_smallS1000K4_gjam.Rda")
+Ltgj0<- load_object( "ODSim_smallS1000K10_gjam0.Rda")
+LtT1<-load_object("ODSim_smallS1000K10_type1.Rda")
+LtT2<-load_object("ODSim_smallS1000K10_type2.Rda")
+LtT3<-load_object("ODSim_smallS1000K10_type3.Rda")
+LtT4<-load_object("ODSim_smallS1000K10_type4.Rda")
 
 
 
 
 
-S_vec<-c(100)
+S_vec<-c(1000)
 r_vec<-c(5)
 
-table_comp<-as.data.frame(matrix(NA, nrow=length(r_vec)*length(S_vec)*5, ncol=1))
-table_comp$S<- rep(S_vec, each=4*5)
-table_comp$mod<- rep(c("gjam","gjam1","gjam2","gjam3","gjam4"), 4*4)
-table_comp$num<- rep(1:9, each=50)
+table_comp<-as.data.frame(matrix(NA, nrow=length(r_vec)*length(S_vec)*5*5, ncol=1))
+table_comp$S<- rep(S_vec, each=5)
+table_comp$mod<- rep(c("gjam","gjam1","gjam2","gjam3","gjam4"), 1)
+table_comp$num<- rep(1:5, each=5)
 table_comp$rv<- rep(c(5,10,20), each=50, 3)
 burn<-1000
 it<- 2000
@@ -765,4 +833,51 @@ df_vs$M_t<- M_t
 plot_vs <- ggplot(df_vs)+
   aes(x = M_t, y = M_m)+geom_point()+geom_smooth(method = "lm") +  geom_abline(intercept = -min(M_t), slope = 1, color="red")
 plot_vs
+
+
+
+
+###################################################################################################
+#####################Gibbs test
+S_value<-100
+r<-5
+K<-4
+N_truncation<-100
+data_set<- generate_data(Sp=S_value,nsamples=50,qval=20,Ktrue=K)
+it<-2000
+burn<-500
+xdata<-data_set$xdata
+Y<-data_set$Y
+idx<- data_set$idx
+Sigma_true<- data_set$S_true
+formula<-as.formula(~env1+env2)
+func<-function(x) {sum(x/(x+(1:S_value)-1))-25}
+alpha.DP<-.bisec(func,0.001,300) #31
+shape=((alpha.DP)^2)/50
+rate=alpha.DP/50
+
+#rl  <- list(r = 5, N = 150, rate=rate,shape=shape)
+rl  <- list(r = 5, N = N_truncation, rate=rate,shape=shape,V=1)
+#rl <- list(r = 20, N =49,alpha.DP=200)
+ml<-list(ng=it,burnin=burn,typeNames='CA',reductList=rl)
+fit2<-.gjam_2(formula,xdata,ydata=as.data.frame(Y),modelList = ml)
+rl  <- list(r = 5, N = N_truncation)
+fit<-gjam(formula,xdata,ydata=as.data.frame(Y),modelList = ml)
+
+trace<-apply(fit$chains$kgibbs,1,function(x) length(unique(x)))
+ind_trace<- seq(1,it,by=5)
+trace_short<- trace[ind_trace]
+df<-as.data.frame(trace)
+df$iter<-1:it
+#plot(apply(fit$chains$kgibbs,1,function(x) length(unique(x))))
+p<-ggplot(df, aes(y=trace, x=iter)) + geom_point() + 
+  labs(title=paste0("Trace plot for the number of groups K for"))+
+  theme_bw() + theme(axis.text.x = element_text(angle = 0, hjust = 1,size = 10), strip.text = element_text(size = 15),legend.position = "top", plot.title = element_text(hjust = 0.5))+
+  geom_hline(yintercept = K,color = "red")
+p
+
+
+plot(density(fit$chains$alpha.DP_g))
+plot(fit$chains$alpha.DP_g)
+
 

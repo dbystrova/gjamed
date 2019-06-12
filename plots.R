@@ -17,31 +17,30 @@ setwd("/Users/dariabystrova/Documents/GitHub/gjamed")
 # LtT3<-load_object("Sim_smallSK4_type3.Rda")
 # LtT4<-load_object("Sim_smallSK4_type4.Rda")
 #LtGJ <- load_object("sim_med/ODSim_smallS1000K10_gjam.Rda")
-Ltgj0<- load_object( "sim_med/ODSim_smallS1000K10_gjam0.Rda")
-LtT1<-load_object("sim_med/ODSim_smallS1000K10_type1.Rda")
-LtT2<-load_object("sim_med/ODSim_smallS1000K10_type2.Rda")
-LtT3<-load_object("sim_med/ODSim_smallS1000K10_type3.Rda")
-LtT4<-load_object("sim_med/ODSim_smallS1000K10_type4.Rda")
-
-
-
-
+Ltgj0<- load_object( "ODSim_smallS1000K10_gjam0.Rda")
+LtT1<-load_object("OD2Sim_smallS1000K10_type1.Rda")
+LtT2<-load_object("OD2Sim_smallS1000K10_type2.Rda")
+LtT3<-load_object("OD2Sim_smallS1000K10_type3.Rda")
+LtT4<-load_object("OD2Sim_smallS1000K10_type4.Rda")
 
 
 S_vec<-c(1000)
 r_vec<-c(5)
-modn<-4
-dsnum<-5
+modn<-5
+dsnum<-2
+it<- 2000
+burn<- 1000
+nsamples<-500
 
 
 table_comp<-as.data.frame(matrix(NA, nrow=length(r_vec)*length(S_vec)*modn*dsnum, ncol=1))
 table_comp$S<- rep(S_vec, each=modn*length(r_vec)*dsnum)
-table_comp$mod<- rep(c("gjam1","gjam2","gjam3","gjam4"), length(r_vec)*length(S_vec), each=dsnum)
+table_comp$mod<- rep(c("gjam","gjam1","gjam2","gjam3","gjam4"), length(r_vec)*length(S_vec), each=dsnum)
 table_comp$num<- rep(1, each=dsnum)
 table_comp$rv<- rep(c(5), each=dsnum, length(S_vec))
-table_comp$avnum<- rep(1:5, 4)
-burn<-500
-it<- 1000
+table_comp$avnum<- rep(1:2, 5)
+burn<-1000
+it<- 2000
 nsamples<-500
 for(i in (1: nrow(table_comp))){
   j<-table_comp$num[i]
@@ -53,12 +52,12 @@ for(i in (1: nrow(table_comp))){
   # if((table_comp$mod[i]=="gjam3")&(length(grep(paste0("r_",table_comp$rv[i]),names(LtT3)[j]))>0)){ table_comp$res[i]<-  mean(LtT3[[j]]$trace[-c(1:burn)])}
   # if((table_comp$mod[i]=="gjam4")&(length(grep(paste0("r_",table_comp$rv[i]),names(LtT4)[j]))>0)){ table_comp$res[i]<- mean(LtT4[[j]]$trace[-c(1:burn)])}
   # 
-  # if((table_comp$mod[i]=="gjam")&(length(grep(paste0("r_",table_comp$rv[i]),names(Ltgj0)[j]))>0)){
-  #   table_comp$res[i]<- mean(LtGJ[[j]][[jm]]$trace)
-  #   table_comp$lweight[i]<- mean(Ltgj0[[j]][[jm]]$pkN)
-  #   table_comp$fit_err[i]<- Ltgj0[[j]][[jm]]$fit
-  #   table_comp$err[i]<- Ltgj0[[j]][[jm]]$err
-  # }
+  if((table_comp$mod[i]=="gjam")&(length(grep(paste0("r_",table_comp$rv[i]),names(Ltgj0)[j]))>0)){
+    table_comp$res[i]<- mean(Ltgj0[[j]][[jm]]$trace)
+    table_comp$lweight[i]<- mean(Ltgj0[[j]][[jm]]$pkN)
+    table_comp$fit_err[i]<- Ltgj0[[j]][[jm]]$fit
+    table_comp$err[i]<- Ltgj0[[j]][[jm]]$err
+  }
   if((table_comp$mod[i]=="gjam1")&(length(grep(paste0("r_",table_comp$rv[i]),names(LtT1)[j]))>0)){
     table_comp$res[i]<-  mean(LtT1[[j]][[jm]]$trace)
     table_comp$lweight[i]<- mean(LtT1[[j]][[jm]]$pkN)
@@ -86,12 +85,16 @@ for(i in (1: nrow(table_comp))){
   
 }
 
+table_comp<-table_comp[,-1]
+
+save(table_comp, file = "tablecompS1000_all.rds")
+
 
 
 ########combine tables
 #S=1000
-tab_1000<-load_object("tablecompS1000.rds")
-load_object("tablecompS1000.rds")
+tab_1000<-load_object("tablecompS1000_all.rds")
+
 #S=100
 tab_100<-load_object("tablecompS100.rds")
 
@@ -99,15 +102,35 @@ tab_100<-load_object("tablecompS100.rds")
 tab_200<-load_object("tablecompS200.rds")
 
 
-#S=200
+#S=500
 tab_500<-load_object("tablecompS500.rds")
 
 
 
-table_all<-rbind(tab_1000,tab_100,tab_200,tab_500)
+########combine tables Corrected
+#S=1000
+#tab_1000<-load_object("tablecompS300_cor.Rds")
+
+#S=100
+tab_100<-load_object("tablecompS100_cor.Rds")
+
+#S=300
+tab_300<-load_object("tablecompS300_cor.Rds")
+
+
+#S=500
+tab_500<-load_object("tablecompS500_cor.Rds")
+
+tab_500<- tab_500[,c(1:10)]
+
+
+it<-2000
+burn<-1000
+
+table_all<-rbind(tab_100,tab_300,tab_500)
 table_comp<-table_all
-table_comp$Schar <- factor(table_comp$Schar, levels=c('S=100','S=200','S=500','S=1000'))
-table_comp<-table_comp[,-1]
+table_comp$Schar <- factor(table_comp$Schar, levels=c('S=100','S=300','S=500'))
+#table_comp<-table_comp[,-1]
 
 ##########################################################################################
 pdf("Clust_prop_gr4SmallS1000.pdf")
@@ -171,25 +194,25 @@ dev.off()
 
 
 ##########################################################################################
-pdf("Fit_error_gr4SmallS100_1000.pdf")
-
-q_fiterr<- ggplot(data= table_comp) +geom_boxplot(aes(x=as.factor(rv),y= as.numeric(fit_err), fill = as.factor(mod))) +
-  scale_x_discrete(name="Parameters", breaks=c("5"),labels=c("r=5"),limits=c("5"))+
-  scale_y_continuous(name="Error",limits=c(0,max(table_comp$fit_err)))+
-  scale_fill_discrete(name = "Models", labels = c("GJAM","GJAM1","GJAM2","GJAM3","GJAM4"))+theme(axis.text.x = element_text(angle = 45, hjust = 1),legend.position="top")+
-  facet_wrap( ~ Schar, strip.position = "bottom", scales = "free_x")+ ylab("Posterior mean")+
-  labs(title="Fit error value for all models", caption=paste0("Number of iterations: ",it," burnin: ",burn," number of samples: ",nsamples))+theme_bw()+theme(panel.spacing = unit(0, "lines"),
-                                                                                                                                                              strip.background = element_blank(),                                                                                                                                                                    strip.placement = "outside",legend.position = "top", plot.title = element_text(hjust = 0.5))
-q_fiterr
-
-dev.off()
+# pdf("Fit_error_gr4SmallS100_1000.pdf")
+# 
+# q_fiterr<- ggplot(data= table_comp) +geom_boxplot(aes(x=as.factor(rv),y= as.numeric(fit_err), fill = as.factor(mod))) +
+#   scale_x_discrete(name="Parameters", breaks=c("5"),labels=c("r=5"),limits=c("5"))+
+#   scale_y_continuous(name="Error",limits=c(0,max(table_comp$fit_err)))+
+#   scale_fill_discrete(name = "Models", labels = c("GJAM","GJAM1","GJAM2","GJAM3","GJAM4"))+theme(axis.text.x = element_text(angle = 45, hjust = 1),legend.position="top")+
+#   facet_wrap( ~ Schar, strip.position = "bottom", scales = "free_x")+ ylab("Posterior mean")+
+#   labs(title="Fit error value for all models", caption=paste0("Number of iterations: ",it," burnin: ",burn," number of samples: ",nsamples))+theme_bw()+theme(panel.spacing = unit(0, "lines"),
+#                                                                                                                                                               strip.background = element_blank(),                                                                                                                                                                    strip.placement = "outside",legend.position = "top", plot.title = element_text(hjust = 0.5))
+# q_fiterr
+# 
+# dev.off()
 
 pdf("RMSE_gr4SmallS1000.pdf")
 
 
-q_rmse_err<- ggplot(data= table_comp) +geom_boxplot(aes(x=as.factor(rv),y= as.numeric(err), fill = as.factor(mod)))+
+q_rmse_err<- ggplot(data= table_comp) +geom_boxplot(aes(x=as.factor(rv),y= as.numeric(sqrt(err)), fill = as.factor(mod)))+
   scale_x_discrete(name="Parameters", breaks=c("5"),labels=c("5"),limits=c("5"))+
-  scale_y_continuous(name="RMSE error",limits=c(0,max(table_comp$err)))+
+  scale_y_continuous(name="RMSE error",limits=c(0,max(sqrt(table_comp$err))))+
   scale_fill_discrete(name = "Models", labels = c("GJAM","GJAM1","GJAM2","GJAM3","GJAM4"))+theme(axis.text.x = element_text(angle = 45, hjust = 1),legend.position="top")+
   facet_wrap( ~ Schar, strip.position = "bottom", scales = "free_x")+ ylab("Posterior mean") + xlab("S and r values")+
   labs(title="RMSE error between estimated and true covariance matrix for all models", caption=paste0("Number of iterations: ",it," burnin: ",burn," number of samples: ",nsamples))+theme_bw()+theme(panel.spacing = unit(0, "lines"),
@@ -216,9 +239,13 @@ dev.off()
 
 
 
+mg <- aggregate(table_comp$res, by=list(table_comp$mod,table_comp$S), FUN=mean)    
 
 
-save(table_comp, file="tablecompS100_1000.Rds")
+
+
+
+#save(table_comp, file="tablecompS100_1000.Rds")
 
 
 
@@ -282,3 +309,20 @@ for(i in 1:9){
   }
 }
 dev.off()
+
+
+
+
+######
+library(psych)
+Mat<- describeBy(table_comp, group=c("mod","Schar","S", "rv"),mat=TRUE,type=3,digits=3)
+
+
+
+
+
+describe.by(x, group=NULL,mat=FALSE,type=3,...)  # deprecated
+
+
+
+
