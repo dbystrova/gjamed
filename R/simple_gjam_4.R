@@ -443,6 +443,7 @@
     rnames <- paste('r',1:r,sep='-')
     colnames(sgibbs) <- .multivarChainNames(nnames,rnames)
     sigErrGibbs <- rep(0,ng) #standard deviad
+    pk_g<- matrix(1,ng,N)
     alpha.PY_g<-rep(0,ng)
     discount.PY_g<-rep(0,ng)
     
@@ -841,6 +842,7 @@
       kgibbs[g,notOther]  <- otherpar$K
       sgibbs[g,]          <- as.vector(otherpar$Z)
       sigErrGibbs[g]      <- sigmaerror
+      pk_g[g,]              <-otherpar$pvec
       alpha.PY_g[g]       <- otherpar$alpha.PY
       discount.PY_g[g]       <- otherpar$discount.PY
       
@@ -1738,7 +1740,7 @@
   }
   if(REDUCT) {
     parameters <- append(parameters, list(rndEff = rndTot/ntot))#, specRand = specRand))
-    chains <- append(chains,list(kgibbs = kgibbs, sigErrGibbs = sigErrGibbs,alpha.PY_g=alpha.PY_g,discount.PY_g=discount.PY_g))
+    chains <- append(chains,list(kgibbs = kgibbs, sigErrGibbs = sigErrGibbs,alpha.PY_g=alpha.PY_g,discount.PY_g=discount.PY_g, pk_g=pk_g))
   }
   
   if('OC' %in% typeNames){

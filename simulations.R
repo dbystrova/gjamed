@@ -1,6 +1,6 @@
 ########## Simulating the data
 rm(list=ls())
-setwd("~/Tesi/Code/modified_gjam/Gjam/")
+#setwd("~/Tesi/Code/modified_gjam/Gjam/")
 library(MASS)
 library(repmis)
 library(gjam)
