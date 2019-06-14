@@ -6,7 +6,7 @@ setwd("~/Documents/GitHub/gjamed")
 library(MASS)
 library(repmis)
 library(gjam)
-library(rlist)
+library(rlist)y
 library(MASS)
 library(truncnorm)
 library(coda)

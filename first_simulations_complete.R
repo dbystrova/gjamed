@@ -1,7 +1,7 @@
 #setwd("~/Bureau/PY_comparisons/gjamed-master")
 rm(list=ls())
 #setwd("~/Tesi/Code/modified_gjam/Gjam/")
-setwd("~/Documents/GitHub/gjamed")
+setwd("C:/Users/giaru/Desktop/Documents/GitHub/gjamed")
 ########## Simulating the data
 library(MASS)
 library(repmis)
