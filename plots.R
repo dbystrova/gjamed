@@ -92,7 +92,7 @@ for(i in (1: nrow(table_comp))){
 
 table_comp<-table_comp[,-1]
 
-save(table_comp, file = "tablecompS1000_all.rds")
+#save(table_comp, file = "tablecompS1000_all.rds")
 
 
 
@@ -109,6 +109,163 @@ tab_200<-load_object("tablecompS200.rds")
 
 #S=500
 tab_500<-load_object("tablecompS500.rds")
+
+
+
+
+
+########combine tables
+#S=1000
+tab_1000<-load_object("tablecompS1000_cor.rds")
+
+#S=100
+tab_100<-load_object("tablecompS100_cor.rds")
+
+#S=200
+tab_300<-load_object("tablecompS300_cor.rds")
+
+
+#S=500
+tab_500<-load_object("tablecompS500_cor.rds")
+
+tab_500<- tab_500[,-11]
+
+
+
+nsamples=500
+it<-2000
+burn<-1000
+
+table_all<-rbind(tab_100,tab_300,tab_500,tab_1000)
+table_comp<-table_all
+table_comp$Schar <- factor(table_comp$Schar, levels=c('S=100','S=300','S=500','S=1000'))
+#table_comp<-table_comp[,-1]
+
+##########################################################################################
+# pdf("Clust_prop_gr4SmallS1000.pdf")
+# q_clust<-  ggplot(data= table_comp) +geom_boxplot(aes(x=as.factor(rv),y= as.numeric(res), fill = as.factor(mod)))+
+#   scale_x_discrete(name="Parameters", breaks=c("5"),
+#                    labels=c("r=5"),limits=c("5"))+
+#   scale_y_continuous(name="Number of clusters",limits=c(0,15),breaks=seq(2,15,by=2))+
+#   scale_fill_discrete(name = "Models", labels = c("GJAM","GJAM1","GJAM2","GJAM3","GJAM4"))+theme(axis.text.x = element_text(angle = 45, hjust = 1),legend.position="top")+
+#   facet_wrap( ~ Schar, strip.position = "bottom", scales = "free_x")+ ylab("Posterior mean") +
+#   labs(title="Ability to recover true number of groups for all models", caption=paste0("Number of iterations: ",it," burnin: ",burn," number of samples: ",nsamples))+
+#   geom_hline(yintercept = 10,color = "red")+theme_bw()+theme(panel.spacing = unit(0, "lines"),
+#                                                             strip.background = element_blank(),
+#                                                             strip.placement = "outside",legend.position = "top", plot.title = element_text(hjust = 0.5))
+# q_clust
+# 
+# dev.off()
+#######################################################################
+
+pdf("Clust_prop_gr4SmallS100_1000K10.pdf")
+q_clust<-  ggplot(data= table_comp) +geom_boxplot(aes(x=Schar,y= as.numeric(res), fill = as.factor(mod)))+
+  scale_y_continuous(name="Number of clusters",limits=c(0,15),breaks=seq(2,15,by=2))+
+  scale_fill_discrete(name = "Models", labels = c("GJAM","GJAM1","GJAM2","GJAM3","GJAM4"))+theme(axis.text.x = element_text(angle = 45, hjust = 1),legend.position="top")+
+  ylab("Posterior mean") +
+  labs(title="Ability to recover true number of groups for all models", caption=paste0("Number of iterations: ",it," burnin: ",burn," number of samples: ",nsamples))+
+  geom_hline(yintercept = 4,color = "red")+theme_bw()+theme(panel.spacing = unit(0, "lines"),
+                                                             strip.background = element_blank(),
+                                                             strip.placement = "outside",legend.position = "top", plot.title = element_text(hjust = 0.5))
+q_clust
+
+dev.off()
+
+
+
+
+Weights_to_table10<- table_all[,c("Schar","mod", "res","lweight","err")]
+Weights_to_table10$mod<- as.factor(Weights_to_table10$mod)
+
+Weights_to_table_sum10<-aggregate(Weights_to_table10, by=list(Weights_to_table10$mod,Weights_to_table10$Schar),  FUN = "mean")
+
+Weights_to_table_sum10$lweight<- round(Weights_to_table_sum10$lweight, 3)
+
+write.csv(Weights_to_table_sum10, file = "WeightsK10.csv")
+
+Wegihts_only<- Weights_to_table_sum10[,c(1,2,6)]
+Wegihts_out<- dcast(data = WO,formula = Group.2~Group.1,value.var = "lweight")
+
+write.csv(Wegihts_out, file = "WeightsK10.csv")
+
+######################################################################
+
+####################
+# pdf("Weights_gr4SmallS1000.pdf")
+# 
+# q_weight<- ggplot(data= table_comp) +geom_boxplot(aes(x=as.factor(rv),y= as.numeric(lweight), fill = as.factor(mod))) +
+#   scale_x_discrete(name="Parameters", breaks=c("5"),
+#                    labels=c("r=5"),limits=c("5"))+
+#   scale_y_continuous(name=expression(p[N]),limits=c(0,0.3))+
+#   scale_fill_discrete(name = "Models", labels = c("GJAM","GJAM1","GJAM2","GJAM3","GJAM4"))+theme(axis.text.x = element_text(angle = 45, hjust = 1),legend.position="top")+
+#   facet_wrap( ~ Schar, strip.position = "bottom", scales = "free_x") +
+#   labs(title=expression(paste("Last ",p[N]," weight value for all models")), caption=paste0("Number of iterations: ",it," burnin: ",burn," number of samples: ",nsamples))+
+#   theme_bw()+theme(panel.spacing = unit(0, "lines"),strip.background = element_blank(),strip.placement = "outside",legend.position = "top", plot.title = element_text(hjust = 0.5))
+# q_weight
+# dev.off()
+
+##########################################################################################
+
+
+pdf("Weights_gr4SmallS100_1000.pdf")
+
+q_weight<- ggplot(data= table_comp) +geom_boxplot(aes(x=as.factor(Schar),y= as.numeric(lweight), fill = as.factor(mod))) +
+  scale_y_continuous(name=expression(p[N]),limits=c(0,0.3))+
+  scale_fill_discrete(name = "Models", labels = c("GJAM","GJAM1","GJAM2","GJAM3","GJAM4"))+theme(axis.text.x = element_text(angle = 45, hjust = 1),legend.position="top")+
+  labs(title=expression(paste("Last ",p[N]," weight value for all models")), caption=paste0("Number of iterations: ",it," burnin: ",burn," number of samples: ",nsamples))+
+  theme_bw()+theme(panel.spacing = unit(0, "lines"),strip.background = element_blank(),strip.placement = "outside",legend.position = "top", plot.title = element_text(hjust = 0.5))
+q_weight
+dev.off()
+
+
+##########################################################################################
+# pdf("Fit_error_gr4SmallS100_1000.pdf")
+# 
+# q_fiterr<- ggplot(data= table_comp) +geom_boxplot(aes(x=as.factor(rv),y= as.numeric(fit_err), fill = as.factor(mod))) +
+#   scale_x_discrete(name="Parameters", breaks=c("5"),labels=c("r=5"),limits=c("5"))+
+#   scale_y_continuous(name="Error",limits=c(0,max(table_comp$fit_err)))+
+#   scale_fill_discrete(name = "Models", labels = c("GJAM","GJAM1","GJAM2","GJAM3","GJAM4"))+theme(axis.text.x = element_text(angle = 45, hjust = 1),legend.position="top")+
+#   facet_wrap( ~ Schar, strip.position = "bottom", scales = "free_x")+ ylab("Posterior mean")+
+#   labs(title="Fit error value for all models", caption=paste0("Number of iterations: ",it," burnin: ",burn," number of samples: ",nsamples))+theme_bw()+theme(panel.spacing = unit(0, "lines"),
+#                                                                                                                                                               strip.background = element_blank(),                                                                                                                                                                    strip.placement = "outside",legend.position = "top", plot.title = element_text(hjust = 0.5))
+# q_fiterr
+# 
+# dev.off()
+# 
+# pdf("RMSE_gr4SmallS1000.pdf")
+# 
+# 
+q_rmse_err<- ggplot(data= table_comp) +geom_boxplot(aes(x=as.factor(rv),y= as.numeric(sqrt(err)), fill = as.factor(mod)))+
+  scale_x_discrete(name="Parameters", breaks=c("5"),labels=c("5"),limits=c("5"))+
+  scale_y_continuous(name="RMSE error",limits=c(0,max(sqrt(table_comp$err))))+
+  scale_fill_discrete(name = "Models", labels = c("GJAM","GJAM1","GJAM2","GJAM3","GJAM4"))+theme(axis.text.x = element_text(angle = 45, hjust = 1),legend.position="top")+
+  facet_wrap( ~ Schar, strip.position = "bottom", scales = "free_x")+ ylab("Posterior mean") + xlab("S and r values")+
+  labs(title="RMSE error between estimated and true covariance matrix for all models", caption=paste0("Number of iterations: ",it," burnin: ",burn," number of samples: ",nsamples))+theme_bw()+theme(panel.spacing = unit(0, "lines"),
+                                                                                                                                                                                                      strip.background = element_blank(),                                                                                                                                                                    strip.placement = "outside",legend.position = "top", plot.title = element_text(hjust = 0.5))
+ q_rmse_err
+# 
+# dev.off()
+
+
+
+pdf("RMSE_gr4SmallS100_1000K10.pdf")
+
+
+q_rmse_err<- ggplot(data= table_comp) +geom_boxplot(aes(x=as.factor(Schar),y= as.numeric(sqrt(err)), fill = as.factor(mod)))+
+  scale_y_continuous(name="RMSE error",limits=c(0,max(sqrt(table_comp$err))))+
+  scale_fill_discrete(name = "Models", labels = c("GJAM","GJAM1","GJAM2","GJAM3","GJAM4"))+theme(axis.text.x = element_text(angle = 45, hjust = 1),legend.position="top")+
+  ylab("Posterior mean") + xlab("S and r values")+
+  labs(title="RMSE error between estimated and true covariance matrix for all models", caption=paste0("Number of iterations: ",it," burnin: ",burn," number of samples: ",nsamples))+theme_bw()+theme(panel.spacing = unit(0, "lines"),
+                                                                                                                                                                                                      strip.background = element_blank(),                                                                                                                                                                    strip.placement = "outside",legend.position = "top", plot.title = element_text(hjust = 0.5))
+q_rmse_err
+
+dev.off()
+
+
+
+
+
+
 
 
 

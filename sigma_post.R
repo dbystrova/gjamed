@@ -147,8 +147,9 @@ simulation_fun_gjam4<-function(data_set,Sp, Ntr, rval,nsamples=500, Ktrue,q=20, 
 
   df_sigma <- data.frame(matrix(NA, nrow =it-burn, ncol =1))
   df_sigma$sigma<- sigma.chains[-c(1:burn)]
+  df_sigma$type<- "posterior"
   ###Compute mean
-  mu <- ddply(df_sigma, type, summarise, grp.mean=mean(sigma))
+  mu <- ddply(df_sigma, "type", summarise, grp.mean=mean(sigma))
   p_sigma<- ggplot(df_sigma, aes(x=sigma)) + geom_vline(data=mu, aes(xintercept=grp.mean),linetype="dashed")+
     geom_density()+labs(title=paste0("Distribution sigma: S=",S," ,r=",r," true gr K=",K_t,",N=",Ntr), caption=paste0("Number of iterations: ",it," burnin: ",burn," number of samples: ",nsamples))+
     theme_bw() + theme(axis.text.x = element_text(angle = 0, hjust = 1,size = 10), strip.text = element_text(size = 15),legend.position = "top", plot.title = element_text(hjust = 0.5))
@@ -173,12 +174,12 @@ simulation_fun_gjam4<-function(data_set,Sp, Ntr, rval,nsamples=500, Ktrue,q=20, 
   sigma_mean<-apply(sigma,c(1,2),mean)
   err<-sum((sigma_mean-Sigma_true)^2)/(Sp*Sp)
   rmspe<-fit$fit$rmspeAll
-
+  pN_chain<- pk_chains[-c(1:burn),(Ntr-1)]
   return(list(trace=trace_short,
               idx=idx,K=fit$chains$kgibbs[it,],
               alpha=alpha.DP,alpha.chains=alpha.chains,pk_val=pk, pkN=pN_chain, 
               coeff_t=Sigma_true,coeff_f=sigma_mean,
-              err=err,fit=rmspe, sigma_chain=sigma.chains))
+              err=err,fit=rmspe, sigma_chain=sigma.chains, sigma.PY=sigma_py))
 
 }
 ####### Just one possible test case
@@ -205,57 +206,270 @@ simulation_fun_gjam4<-function(data_set,Sp, Ntr, rval,nsamples=500, Ktrue,q=20, 
 
 ####Small S, N==S, n=500
 
-list=list()
-list2=list()
-list3=list()
-list4=list()
+
 list5=list()
 list0=list()
 data_list=list()
 lk<-list()
-S_vec<-c(100)
+S_vec<-c(100,200)
 r_vec<-5
 #n_vec<-c(10)
 n_samples<- 500
 k<-1
-it<-20
-burn<-10
+it<-5000
+burn<-2500
 Ktr<-10
 q<-20
 
-path<- "/Users/bystrova/Documents/GitHub/gjamed/sigma_post"
+path<- "~/Documents/GitHub/gjamed/sigma_post/"
 for(i in 1:length(S_vec)){
   data_list=list()
   k=1
-  for(l in (1:2)){
+  for(l in (1:1)){
       data_list<- list.append(data_list,generate_data(Sp=S_vec[i],nsamples=n_samples,qval=q,Ktrue=Ktr))
       names(data_list)[[l]]<-paste0("S_",S_vec[i],"_q_",q,"n_",n_samples,"_K_",Ktr,"_l",l)
     }
     ########gjam 4  model list########################    
     l5<-list()
-    l5<- lapply(data_list,simulation_fun_oneDS,Sp=S_vec[i], Ntr=150, q=q,rval=r_vec,nsamples=n_samples, Ktrue=Ktr,it=it,burn=burn,type="4")
-    list5<-list.append(list5,assign(paste0("S_",S_vec[i],"_r_5_N_150_n_500_K",Ktr),l5))
+    l5<- lapply(data_list,simulation_fun_gjam4,Sp=S_vec[i], Ntr=150, q=q,rval=r_vec,nsamples=n_samples, Ktrue=Ktr,it=it,burn=burn)
+    list5<-list.append(list5,assign(paste0("S_",S_vec[i],"_r_5_N_n_500_K",Ktr),l5))
     names(list5)[[k]]<-paste0("S_",S_vec[i],"_r_5_N_150_n_",n_samples,"_K",Ktr)
-    save(list5, file = paste0(path,"ODSim_smallS",S_vec[i],"K",Ktr,"_type4.Rda"))
+    save(list5, file = paste0(path,"Sigma_mod",S_vec[i],"K",Ktr,"_type4.Rda"))
     k=k+1
 }
 
 
-S<-10
 
-for(l in (1:2)){
-  data_list<- list.append(data_list,generate_data(Sp=S,nsamples=n_samples,qval=q,Ktrue=Ktr))
-  names(data_list)[[l]]<-paste0("S_",S,"_q_",q,"n_",n_samples,"_K_",Ktr,"_l",l)
+
+load_object <- function(file) {
+  tmp <- new.env()
+  load(file = file, envir = tmp)
+  tmp[[ls(tmp)[1]]]
 }
-########gjam 4  model list########################    
-l5<-list()
-l5<- lapply(data_list,simulation_fun_oneDS,Sp=S_vec[i], Ntr=150, q=q,rval=r_vec,nsamples=n_samples, Ktrue=Ktr,it=it,burn=burn,type="4")
-list5<-list.append(list5,assign(paste0("S_",S_vec[i],"_r_5_N_150_n_500_K",Ktr),l5))
-names(list5)[[k]]<-paste0("S_",S_vec[i],"_r_5_N_150_n_",n_samples,"_K",Ktr)
-save(list5, file = paste0(path,"ODSim_smallS",S_vec[i],"K",Ktr,"_type4.Rda"))
-k=k+1
 
-data_set<- data_list$S_100_q_20n_500_K_10_l1
 
-simulation_fun_gjam4(data_set,Sp=100, Ntr=150, rval=5,nsamples=500, Ktrue=10,q=20, it=1000, burn=500)
+
+
+plot(list5$S_200_r_5_N_150_n_500_K10$S_100_q_20n_500_K_10_l1$sigma_chain)
+
+
+plot(density(list5$S_200_r_5_N_150_n_500_K10$S_100_q_20n_500_K_10_l1$sigma_chain))
+
+
+
+post1<- load_object(paste0(path,"Sigma_mod100K10_type4.Rda"))
+
+
+
+df_sigma <- data.frame(matrix(NA, nrow =5000, ncol =1))
+df_sigma$sigma<-post1$S_100_r_5_N_150_n_500_K10$S_100_q_20n_500_K_10_l1$sigma_chain
+df_sigma$type<- "posterior"
+#df_alpha_prior <- data.frame(matrix(NA, nrow =it-burn, ncol =1))
+#df_alpha_prior$alpha<- rgamma(it-burn, shape, rate)
+#alpha_seq= seq(min(alpha.chains[-c(1:burn)]),max(alpha.chains[-c(1:burn)]),length=it-burn)
+#df_alpha_prior$alpha <- dgamma(alpha_seq,rate,shape)
+
+#df_alpha_prior$type<- "prior"
+#df_alpha_all<- rbind(df_alpha[-1,],df_alpha_prior[-1,])
+###Compute mean
+mu <- ddply(df_sigma, "type", summarise, grp.mean=mean(sigma))
+mu1<- as.data.frame(post1$S_100_r_5_N_150_n_500_K10$S_100_q_20n_500_K_10_l1$sigma.PY)
+colnames(mu1)<- c("grp.mean")
+mu1$type<- "prior"
+mu<- rbind(mu, mu1)
+
+
+
+pdf(paste0(path,"Posterior_density_sigmaT4.pdf"))
+p_sigma<- ggplot(df_sigma, aes(x=sigma)) + geom_vline(data=mu, aes(xintercept=grp.mean, color=type),linetype="dashed")+
+  geom_density(color="red",adjust = 2)+labs(title=paste0("Posterior distribution for sigma")) +
+  theme_bw() + theme(axis.text.x = element_text(angle = 0, hjust = 1,size = 10), strip.text = element_text(size = 15),legend.position = "top", plot.title = element_text(hjust = 0.5))+
+  scale_color_manual(name = c("Legend"), values = c("prior"="#9999FF", "posterior"= "#FF6666"), labels=c("posterior mean","prior mean"))
+p_sigma
+
+
+it<-5000
+burn<-2500
+df_alpha <- data.frame(matrix(NA, nrow =it-burn, ncol =1))
+df_alpha$alpha<- post1$S_100_r_5_N_150_n_500_K10$S_100_q_20n_500_K_10_l1$alpha.chains[-c(1:burn)]
+df_alpha$type<- "posterior"
+#df_alpha_prior <- data.frame(matrix(NA, nrow =it-burn, ncol =1))
+df_alpha_prior$alpha<- rgamma(it-burn, shape, rate)
+###Compute mean
+mu <- ddply(df_alpha, "type", summarise, grp.mean=mean(alpha))
+mu1<- as.data.frame(post1$S_100_r_5_N_150_n_500_K10$S_100_q_20n_500_K_10_l1$alpha)
+colnames(mu1)<- c("grp.mean")
+mu1$type<- "prior"
+mu<- rbind(mu, mu1)
+
+p_alpha_2<- ggplot(df_alpha, aes(x=alpha)) + geom_vline(data=mu, aes(xintercept=grp.mean, color=type),linetype="dashed")+
+  geom_density(color="red")+labs(title=paste0("Posterior distribution for alpha"))+
+  theme_bw() + theme(axis.text.x = element_text(angle = 0, hjust = 1,size = 10), strip.text = element_text(size = 15),legend.position = "top", plot.title = element_text(hjust = 0.5))+
+  scale_color_manual(name = c("Legend"), values = c("prior"="#9999FF", "posterior"= "#FF6666"), labels=c("posterior mean","prior mean"))
+p_alpha_2
+
+dev.off()
+
+
+post2<- load_object(paste0(path,"Sigma_mod200K10_type4.Rda"))
+
+df_sigma <- data.frame(matrix(NA, nrow =1000, ncol =1))
+df_sigma$sigma<-post2$S_200_r_5_N_150_n_500_K10$S_100_q_20n_500_K_10_l1$sigma_chain
+df_sigma$type<- "posterior"
+#df_alpha_prior <- data.frame(matrix(NA, nrow =it-burn, ncol =1))
+#df_alpha_prior$alpha<- rgamma(it-burn, shape, rate)
+#alpha_seq= seq(min(alpha.chains[-c(1:burn)]),max(alpha.chains[-c(1:burn)]),length=it-burn)
+#df_alpha_prior$alpha <- dgamma(alpha_seq,rate,shape)
+
+#df_alpha_prior$type<- "prior"
+#df_alpha_all<- rbind(df_alpha[-1,],df_alpha_prior[-1,])
+###Compute mean
+mu <- ddply(df_sigma, "type", summarise, grp.mean=mean(sigma))
+#mu1<- as.data.frame(LtT2$S_1000_r_5_N_150_n_500_K4$S_1000_q_20n_500_K_4_l2$alpha)
+#colnames(mu1)<- c("grp.mean")
+#mu1$type<- "prior"
+#mu<- rbind(mu, mu1)
+
+
+
+pdf(paste0(path,"Posterior_density_sigmaS200T4.pdf"))
+p_sigma<- ggplot(df_sigma, aes(x=sigma)) + geom_vline(data=mu, aes(xintercept=grp.mean, color=type),linetype="dashed")+
+  geom_density(color="red",adjust = 2)+labs(title=paste0("Posterior distribution for sigma")) +
+  theme_bw() + theme(axis.text.x = element_text(angle = 0, hjust = 1,size = 10), strip.text = element_text(size = 15),legend.position = "top", plot.title = element_text(hjust = 0.5))+
+  scale_color_manual(name = c("Legend"), values = c("prior"="#9999FF", "posterior"= "#FF6666"), labels=c("posterior mean","prior mean"))
+p_sigma
+dev.off()
+
+
+
+# 
+# for(l in (1:2)){
+#   data_list<- list.append(data_list,generate_data(Sp=S,nsamples=n_samples,qval=q,Ktrue=Ktr))
+#   names(data_list)[[l]]<-paste0("S_",S,"_q_",q,"n_",n_samples,"_K_",Ktr,"_l",l)
+# }
+# ########gjam 4  model list########################    
+# l5<-list()
+# l5<- lapply(data_list,simulation_fun_oneDS,Sp=S_vec[i], Ntr=150, q=q,rval=r_vec,nsamples=n_samples, Ktrue=Ktr,it=it,burn=burn,type="4")
+# list5<-list.append(list5,assign(paste0("S_",S_vec[i],"_r_5_N_150_n_500_K",Ktr),l5))
+# names(list5)[[k]]<-paste0("S_",S_vec[i],"_r_5_N_150_n_",n_samples,"_K",Ktr)
+# save(list5, file = paste0(path,"ODSim_smallS",S_vec[i],"K",Ktr,"_type4.Rda"))
+# k=k+1
+# 
+# data_set<- data_list$S_10_q_20n_500_K_10_l1
+# 
+# f4<- simulation_fun_gjam4(data_set,Sp=10, Ntr=150, rval=5,nsamples=500, Ktrue=10,q=20, it=1000, burn=500)
+# 
+#########################################################################################
+
+
+
+pdf(paste0(path,"Posterior_weights_all.pdf"))
+
+
+path2<- "~/Documents/GitHub/gjamed/"
+
+
+WtabS100K10<- load_object(paste0(path2,"weights_tablecompS100K10.Rds"))
+WtabS100K10$Kchar<- "K=10"
+WtabS300K20<- load_object(paste0(path2,"weights_tablecompS300K20.Rds"))
+WtabS300K20$Schar<- "S=300"
+WtabS300K20$Kchar<-"K=20"
+
+WtabS500K50<- load_object(paste0(path2,"weights_tablecompS500K50.Rds"))
+WtabS500K50$Kchar<-"K=50"
+Weights_all<- rbind(WtabS100K10,WtabS300K20,WtabS500K50)
+
+table_comp<-Weights_all
+table_comp$Schar <- factor(table_comp$Schar, levels=c('S=100','S=300','S=500'))
+#table_comp<-table_comp[,-1]
+table_comp$Kchar <- factor(table_comp$K, levels=c('K=10','K=20','K=50'))
+
+
+q_clust<-  ggplot(data= table_comp) +geom_boxplot(aes(x=Schar,y= as.numeric(res), fill = as.factor(mod)))+
+  scale_y_continuous(name="Number of clusters",limits=c(0,60),breaks=seq(2,15,by=2))+
+  scale_fill_discrete(name = "Models", labels = c("GJAM","GJAM1","GJAM2","GJAM3","GJAM4"))+theme(axis.text.x = element_text(angle = 45, hjust = 1),legend.position="top")+
+  ylab("Posterior mean") +
+  labs(title="Ability to recover true number of groups for all models", caption=paste0("Number of iterations: ",it," burnin: ",burn," number of samples: ",nsamples))+
+  geom_hline(yintercept = 10,color = "red")+theme_bw()+theme(panel.spacing = unit(0, "lines"),
+                                                             strip.background = element_blank(),
+                                                             strip.placement = "outside",legend.position = "top", plot.title = element_text(hjust = 0.5))
+q_clust
+
+
+
+
+
+
+
+q_weight<- ggplot(data= table_comp) +geom_boxplot(aes(x=as.factor(Schar),y= as.numeric(lweight), fill = as.factor(mod))) +
+  scale_y_continuous(name=expression(p[N]),limits=c(0,0.3))+
+  scale_fill_discrete(name = "Models", labels = c("GJAM","GJAM1","GJAM2","GJAM3","GJAM4"))+theme(axis.text.x = element_text(angle = 45, hjust = 1),legend.position="top")+
+  labs(title=expression(paste("Last ",p[N]," weight value for all models")), caption=paste0("Number of iterations: ",it," burnin: ",burn," number of samples: ",nsamples))+
+  theme_bw()+theme(panel.spacing = unit(0, "lines"),strip.background = element_blank(),strip.placement = "outside",legend.position = "top", plot.title = element_text(hjust = 0.5))
+q_weight
+
+
+
+q_rmse_err<- ggplot(data= table_comp) +geom_boxplot(aes(x=as.factor(Schar),y= as.numeric(sqrt(err)), fill = as.factor(mod)))+
+  scale_y_continuous(name="RMSE error",limits=c(0,max(sqrt(table_comp$err))))+
+  scale_fill_discrete(name = "Models", labels = c("GJAM","GJAM1","GJAM2","GJAM3","GJAM4"))+theme(axis.text.x = element_text(angle = 45, hjust = 1),legend.position="top")+
+  ylab("Posterior mean") + xlab("S and r values")+
+  labs(title="RMSE error between estimated and true covariance matrix for all models", caption=paste0("Number of iterations: ",it," burnin: ",burn," number of samples: ",nsamples))+theme_bw()+theme(panel.spacing = unit(0, "lines"),
+                                                                                                                                                                                                      strip.background = element_blank(),                                                                                                                                                                    strip.placement = "outside",legend.position = "top", plot.title = element_text(hjust = 0.5))
+q_rmse_err
+
+
+
+#dev.off()
+
+Weights_to_table<- Weights_all[,c("Schar","mod", "res","lweight","err","Neps")]
+Weights_to_table$mod<- as.factor(Weights_to_table$mod)
+
+Weights_to_table_sum<-aggregate(Weights_to_table, by=list(Weights_to_table$mod,Weights_to_table$Schar),  FUN = "mean")
+
+Weights_to_table_sum$lweight<- round(Weights_to_table_sum$lweight, 3)
+
+Weights_to_table_sum_to_csv<- Weights_to_table_sum[which(Weights_to_table_sum$Group.1%in%c("gjam3","gjam4")),]
+
+
+
+
+write.csv(Weights_to_table_sum_to_csv, file = "Weights.csv")
+
+
+
+# caption=paste0("Number of iterations: ",it," burnin: ",burn," number of samples: ",nsamples)
+
+
+pdf(paste0(path2,"Posterior_weights_all_Kdiff.pdf"))
+
+
+
+q_weight<- ggplot(data= table_comp) +geom_boxplot(aes(x=as.factor(Schar),y= as.numeric(lweight), fill = as.factor(mod))) +
+  scale_x_discrete(name="Parameters", breaks=c("S=100", "S=300","S=500"),
+                   labels=c("S=100, K=10", "S=300, K=20","S=500, K=50"))+
+  scale_y_continuous(name=expression(p[N]),limits=c(0,0.3))+
+  scale_fill_discrete(name = "Models", labels = c("GJAM","GJAM1","GJAM2","GJAM3","GJAM4"))+theme(axis.text.x = element_text(angle = 45, hjust = 1),legend.position="top")+
+  labs(title=expression(paste("Last ",p[N]," weight value for all models and different number of groups")))+
+  theme_bw()+theme(panel.spacing = unit(0, "lines"),strip.background = element_blank(),strip.placement = "outside",legend.position = "top", plot.title = element_text(hjust = 0.5))
+q_weight
+
+
+dev.off()
+
+
+
+ q_weight<- ggplot(data= table_comp) +geom_boxplot(aes(x=as.factor(Kchar),y= as.numeric(lweight), fill = as.factor(mod))) +
+   scale_x_discrete(name="Parameters", breaks=c("K=10", "K=20","K=50"),
+                    labels=c("K=10", "K=20","K=50"),limits=c("K=10", "K=20","K=50"))+
+   scale_y_continuous(name=expression(p[N]),limits=c(0,0.3))+
+   scale_fill_discrete(name = "Models", labels = c("GJAM","GJAM1","GJAM2","GJAM3","GJAM4"))+theme(axis.text.x = element_text(angle = 45, hjust = 1),legend.position="top")+
+   facet_wrap( ~ Schar, strip.position = "bottom", scales = "free_x") +
+   labs(title=expression(paste("Last ",p[N]," weight value for all models")), caption=paste0("Number of iterations: ",it," burnin: ",burn," number of samples: ",nsamples))+
+   theme_bw()+theme(panel.spacing = unit(0, "lines"),strip.background = element_blank(),strip.placement = "outside",legend.position = "top", plot.title = element_text(hjust = 0.5))
+ q_weight
+
+ 
+ dev.off()
+
 
