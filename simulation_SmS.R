@@ -170,11 +170,9 @@ simulation_fun_oneDS<-function(data_set,Sp, Ntr, rval,nsamples=500, Ktrue,q=20, 
     rate=alpha.PY/10
     # 95% quantile of alpha
     alpha.max=qgamma(.95, shape=shape, rate=rate)
-    alpha.max_val<-5
+    #alpha.max_val<-5
     sigma_py_max<-0.5
-    N_eps<-floor(.compute_tau_mean(sigma_py_max,alpha.max_val,eps) + 2*.compute_tau_var(sigma_py_max,alpha.max_val,eps))
-    
-    
+    N_eps<-floor(.compute_tau_mean_large_dim(sigma_py_max,alpha.max,eps) + 2*.compute_tau_var_large_dim(sigma_py_max,alpha.max,eps))
     rl   <- list(r = r, N = N_eps,rate=rate,shape=shape,V1=1,ro.disc=ro.disc) #here to modify N
     ml<-list(ng=it,burnin=burn,typeNames='CON',reductList=rl)
     fit<-.gjam_4(formula,xdata,ydata=as.data.frame(Y),modelList = ml)

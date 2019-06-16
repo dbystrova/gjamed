@@ -1,0 +1,18 @@
+Read me please :)
+
+
+
+For each simulation file and run, important to check:
+
+In function simulation_function:
+
+1. Type of data in gjam  - "CON", "CA"
+2. Algorithm to define the alpha, sigma for PY (gjam3 and gjam4):
+- For algorithm gjam3 the Neps could be small, sometimes added max(Neps, 20)
+- For gjam 4, as alpha posterior doesn't go to small values easy, sometimes in extreme cases the value
+ is fixed for 5, so the bound is alpha=5, sigma-0.5. For non extreme case could be relaxed to quantile
+3. Check thinning values for trace, weights, alpha  for the output of the function!
+
+For running the models loops
+1. Check parallel mclapply/lapply
+2. Check truncation Ntrunc for the gjam0, gjam2 - should be min{150,S}

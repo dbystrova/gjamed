@@ -379,6 +379,9 @@ burn<-500
 n_samples<-500
 Ktr<-50
 q<-20
+
+
+#Choose path to folder
 #path<- "/mnt/workspace/Gjammod/weights/"
 path<- "/home/dbystrov/Bureau/PY_comp0306/weights"
 
