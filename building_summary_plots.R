@@ -10,24 +10,19 @@ load_object <- function(file) {
 library(ggplot2)
 #setwd("/mnt/beegfs/mistis/dbystrov/Gjammod")
 setwd("/Users/dariabystrova/Documents/GitHub/gjamed")
-Ltgj0<- load_object( "ODSim_smallS1000K_10_gjam0.Rda")
-LtT1<-load_object("ODSim_smallS1000K_10_type1.Rda")
-LtT2<-load_object("ODSim_smallS1000K_10_type2.Rda")
-LtT3<-load_object("OD2Sim_smallS1000K10_type3.Rda")
-LtT4<-load_object("OD2Sim_smallS1000K10_type4.Rda")
+Ltgj0<- load_object( "smallnODSim_smallS100K4_gjam0.Rda")
+LtT1<-load_object("smallnODSim_smallS100K4_type1.Rda")
+LtT2<-load_object("smallnODSim_smallS100K4_type2.Rda")
+LtT3<-load_object("smallnODSim_smallS100K4_type3.Rda")
+LtT4<-load_object("smallnODSim_smallS100K4_type4.Rda")
 
 
-
-
-
-
-
-S_vec<-c(1000)
+S_vec<-c(100)
 r_vec<-c(5)
 modn<-5
 dsnum<-2
-it<- 2000
-burn<- 1000
+it<- 1000
+burn<- 500
 nsamples<-500
 
 

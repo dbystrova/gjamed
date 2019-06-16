@@ -1,0 +1,177 @@
+---
+title: "BNPdensity_DPprior"
+author: "Bystrova Daria"
+date: "6/16/2019"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+#install.packages("BNPdensity")
+library(BNPdensity)
+library(ggplot2)
+```
+
+## Dirichlet prior for Gaussian Mixture
+
+Here we reporduce the example from the (DeBlasi 2015) paper.
+The initial data comes from the distribution : uniform mixture of two Gaussians with parameters 
+$N(2,0.2)$ and $N(10,0.2)$. Number of samples $N =50$ in the initial example, and the parameter $\alpha =19.6$, such that $\mathbb{E}[K_n] =25$.
+
+```{r mix data}
+
+gen_data<- function(mu1=2,mu2=10, sigma1=0.2, sigma2=0.2, ns=50, prob_vec=c(0.5,0.5)){
+  components <- sample(1:2,prob=prob_vec,size=ns,replace=TRUE)
+  mus <- c(mu1,mu2)
+  sds <- sqrt(c(sigma1,sigma2))
+  samples <- rnorm(n=ns,mean=mus[components],sd=sds[components])
+  return(samples)
+}
+
+sample<- gen_data(ns=50)
+#hist(sample,probability=TRUE,breaks=40,col=grey(.9),ylim=c(0,ymax))
+
+```
+
+## Density estimation
+
+Firstly, fit the initial example from the paper:
+
+Number of samples $N =50$
+$\alpha =19.6$
+
+
+
+```{r BNPmix1 50}
+NS=50
+DP.alpha=19.6
+sample50<- gen_data(ns=NS)
+it<-1500
+burn<-floor(it*0.3)
+result <- MixNRMI2(sample50, probs = c(0.025, 0.5, 0.975) ,Alpha=DP.alpha, Beta=1, Gama=0, distr.k = 1,distr.py0=1, Nit=it, Pbi=0.3)
+
+n_it<-it-burn
+df_res <- data.frame(matrix(NA, nrow =NS, ncol =1))
+df_res$sample<-sample50
+
+# Plotting density estimate + 95% credible interval
+m <- ncol(result$qx)
+ymax <- max(result$qx[,m])
+par(mfrow=c(1,1))
+hist(sample50,probability=TRUE,breaks=40,col=grey(.9),ylim=c(0,ymax),main=paste0("Density estimate for K=2,N=",NS,", alpha =",DP.alpha))
+lines(result$xx,result$qx[,1],lwd=2)
+lines(result$xx,result$qx[,2],lty=3,col=4)
+lines(result$xx,result$qx[,m],lty=3,col=4)
+#title(paste0("Density estimate for K=2,N=",50,"alpha =",19.6))
+
+# Plotting number of clusters
+#par(mfrow=c(2,1))
+plot(1:n_it, result$R,type="l",main="Trace of R")
+
+
+n_it<-it-burn
+df_r <- data.frame(matrix(NA, nrow =n_it, ncol =1))
+df_r$clust<-result$R
+df_r$it<-1:n_it
+
+ p_est<- ggplot(df_r, aes(x=clust)) +  geom_histogram(bins=10,aes(y=..density..),colour="black")+
+   geom_density(aes(y=..density..),color="red",adjust = 2)+labs(title=paste0("Posterior distribution for number of clusters, N=",NS,",CPO=",round(result$cpo,2),",alpha=",DP.alpha)) +
+   theme_bw() + theme(axis.text.x = element_text(angle = 0, hjust = 1,size = 10), strip.text = element_text(size = 15),legend.position = "top", plot.title = element_text(hjust = 0.5))
+ p_est
+
+
+```
+
+
+Result is similar to the paper result!. 
+
+What happens if we take number of sample bigger then 50?
+$N=150$
+
+
+
+
+```{r BNPmix1 150}
+
+NS=150
+DP.alpha=19.6
+sample150<- gen_data(ns=NS)
+it<-1500
+burn<-floor(it*0.3)
+result <- MixNRMI2(sample50, probs = c(0.025, 0.5, 0.975) ,Alpha=DP.alpha, Beta=1, Gama=0, distr.k = 1,distr.py0=1, Nit=it, Pbi=0.3)
+
+n_it<-it-burn
+df_res <- data.frame(matrix(NA, nrow =NS, ncol =1))
+df_res$sample<-sample50
+
+# Plotting density estimate + 95% credible interval
+m <- ncol(result$qx)
+ymax <- max(result$qx[,m])
+par(mfrow=c(1,1))
+hist(sample50,probability=TRUE,breaks=40,col=grey(.9),ylim=c(0,ymax),main=paste0("Density estimate for K=2,N=",NS,", alpha =",DP.alpha))
+lines(result$xx,result$qx[,1],lwd=2)
+lines(result$xx,result$qx[,2],lty=3,col=4)
+lines(result$xx,result$qx[,m],lty=3,col=4)
+#title(paste0("Density estimate for K=2,N=",50,"alpha =",19.6))
+
+# Plotting number of clusters
+#par(mfrow=c(2,1))
+plot(1:n_it, result$R,type="l",main="Trace of R")
+
+
+n_it<-it-burn
+df_r <- data.frame(matrix(NA, nrow =n_it, ncol =1))
+df_r$clust<-result$R
+df_r$it<-1:n_it
+
+ p_est<- ggplot(df_r, aes(x=clust)) +  geom_histogram(bins=10,aes(y=..density..),colour="black")+
+   geom_density(aes(y=..density..),color="red",adjust = 2)+labs(title=paste0("Posterior distribution for number of clusters, N=",NS,",CPO=",round(result$cpo,2),",alpha=",DP.alpha)) +
+   theme_bw() + theme(axis.text.x = element_text(angle = 0, hjust = 1,size = 10), strip.text = element_text(size = 15),legend.position = "top", plot.title = element_text(hjust = 0.5))
+ p_est
+
+
+```
+ 
+ 
+ 
+ 
+```{r BNPmix1 150 2}
+
+NS=150
+DP.alpha=2
+sample150<- gen_data(ns=NS)
+it<-1500
+burn<-floor(it*0.3)
+result <- MixNRMI2(sample50, probs = c(0.025, 0.5, 0.975) ,Alpha=DP.alpha, Beta=1, Gama=0, distr.k = 1,distr.py0=1, Nit=it, Pbi=0.3)
+
+n_it<-it-burn
+df_res <- data.frame(matrix(NA, nrow =NS, ncol =1))
+df_res$sample<-sample50
+
+# Plotting density estimate + 95% credible interval
+m <- ncol(result$qx)
+ymax <- max(result$qx[,m])
+par(mfrow=c(1,1))
+hist(sample50,probability=TRUE,breaks=40,col=grey(.9),ylim=c(0,ymax),main=paste0("Density estimate for K=2,N=",NS,", alpha =",DP.alpha))
+lines(result$xx,result$qx[,1],lwd=2)
+lines(result$xx,result$qx[,2],lty=3,col=4)
+lines(result$xx,result$qx[,m],lty=3,col=4)
+#title(paste0("Density estimate for K=2,N=",50,"alpha =",19.6))
+
+# Plotting number of clusters
+#par(mfrow=c(2,1))
+plot(1:n_it, result$R,type="l",main="Trace of R")
+
+
+n_it<-it-burn
+df_r <- data.frame(matrix(NA, nrow =n_it, ncol =1))
+df_r$clust<-result$R
+df_r$it<-1:n_it
+
+ p_est<- ggplot(df_r, aes(x=clust)) +  geom_histogram(bins=20,aes(y=..density..),colour="black")+
+   geom_density(aes(y=..density..),color="red",adjust = 3)+labs(title=paste0("Posterior distribution for number of clusters, N=",NS,",CPO=",round(result$cpo,2),",alpha=",DP.alpha)) +
+   theme_bw() + theme(axis.text.x = element_text(angle = 0, hjust = 1,size = 10), strip.text = element_text(size = 15),legend.position = "top", plot.title = element_text(hjust = 0.5))
+ p_est
+
+
+```
