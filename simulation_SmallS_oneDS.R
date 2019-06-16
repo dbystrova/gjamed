@@ -144,7 +144,7 @@ simulation_fun_oneDS<-function(data_set,Sp, Ntr, rval,nsamples=500, Ktrue,q=20, 
     #   ####corrected formula : added -1
     #   func<-function(x) {(x/alp_sig[i,"sigma"])*(prod((x+alp_sig[i,"sigma"]+c(1:S) -1)/(x+c(1:S) -1))-1) - K_t}
     #   alp_sig[i,"alpha"]<-.bisec(func,0.0001,100)
-    #   N_eps<-floor(.compute_tau_mean(alp_sig[i,"sigma"], alp_sig[i,"alpha"],eps) + 2*.compute_tau_var(alp_sig[i,"sigma"], alp_sig[i,"alpha"],eps))
+    #   N_eps<-floor(compute_tau_mean_large_dim(alp_sig[i,"sigma"], alp_sig[i,"alpha"],eps) + 2*compute_tau_var_large_dim(alp_sig[i,"sigma"], alp_sig[i,"alpha"],eps))
     #   ifelse(N_eps<=150,alp_sig[i,"is_less_150"]<-T,alp_sig[i,"is_less_150"]<-F)
     #   N_eps
     # }
@@ -157,7 +157,7 @@ simulation_fun_oneDS<-function(data_set,Sp, Ntr, rval,nsamples=500, Ktrue,q=20, 
     alpha.PY<-.bisec(funcPY_root,0.0001,100)
     
     
-    N_eps<-floor(.compute_tau_mean(sigma_py,alpha.PY,eps) + 2*.compute_tau_var(sigma_py,alpha.PY,eps))
+    N_eps<-floor(compute_tau_mean_large_dim(sigma_py,alpha.PY,eps) + 2*compute_tau_var_large_dim(sigma_py,alpha.PY,eps))
     rl   <- list(r = r, N = N_eps, sigma_py=sigma_py, alpha=alpha.PY)
     ml<-list(ng=it,burnin=burn,typeNames='CA',reductList=rl)
     fit<-.gjam_3(formula,xdata,ydata=as.data.frame(Y),modelList = ml)
@@ -176,7 +176,7 @@ simulation_fun_oneDS<-function(data_set,Sp, Ntr, rval,nsamples=500, Ktrue,q=20, 
       ####corrected added  -1
       func<-function(x) {(x/alp_sig[i,"sigma"])*(prod((x+alp_sig[i,"sigma"]+c(1:S)-1)/(x+c(1:S) -1))-1) - K_t}
       alp_sig[i,"alpha"]<-.bisec(func,0.01,100)
-      N_eps<-floor(.compute_tau_mean(alp_sig[i,"sigma"], alp_sig[i,"alpha"],eps) + 2*.compute_tau_var(alp_sig[i,"sigma"], alp_sig[i,"alpha"],eps))
+      N_eps<-floor(compute_tau_mean_large_dim(alp_sig[i,"sigma"], alp_sig[i,"alpha"],eps) + 2*compute_tau_var_large_dim(alp_sig[i,"sigma"], alp_sig[i,"alpha"],eps))
       ifelse(N_eps<=150,alp_sig[i,"is_less_150"]<-T,alp_sig[i,"is_less_150"]<-F)
       N_eps
     }
@@ -194,7 +194,7 @@ simulation_fun_oneDS<-function(data_set,Sp, Ntr, rval,nsamples=500, Ktrue,q=20, 
     alpha.max=qgamma(.95, shape=shape, rate=rate)
     alpha.max_val<-5
     sigma_py_max<-0.5
-    N_eps<-floor(.compute_tau_mean(sigma_py_max,alpha.max_val,eps) + 2*.compute_tau_var(sigma_py_max,alpha.max_val,eps))
+    N_eps<-floor(compute_tau_mean_large_dim(sigma_py_max,alpha.max_val,eps) + 2*compute_tau_var_large_dim(sigma_py_max,alpha.max_val,eps))
     
     
     rl   <- list(r = r, N = N_eps,rate=rate,shape=shape,V1=1,ro.disc=ro.disc) #here to modify N

@@ -1,5 +1,7 @@
 rm(list=ls())
+#setwd("~/Bureau/PY_comp0306/gjamed-master")
 setwd("~/Documents/GitHub/gjamed")
+
 ########## Simulating the data
 library(MASS)
 library(repmis)
@@ -38,7 +40,7 @@ generate_data<-function(Sp=50,nsamples=500,qval=20,Ktrue=4){
   L<-X%*%t(B) #nxS
   K_t<- Ktrue
   cat("True number of clusters : ",K_t,"\n")
-  A<-matrix(NA,nrow=ceiling(K_t),ncol=q)
+  A<-matrix(NA,nrow=ceiling(K_t),ncol =q)
   for(i in 1:ceiling(K_t)){
     A[i,]<-mvrnorm(n = 1,rep(0,q), Sigma=3*diag(q)) #Nxq short and skinny
   }
@@ -61,14 +63,6 @@ simulation_fun_oneDS<-function(data_set,Sp, Ntr, rval,nsamples=500, Ktrue,q=20, 
   n<- nsamples
   r <- rval
   iterations<-it
-  #env<-runif(-50,50,n=n)
-  #X<-cbind(1,poly(env,2)) #nxK
-  #idx<-sample(S)
-  #B_0<-seq(0,100,length.out=S)[idx]
-  #B_1<-seq(0,100,length.out=S)[idx]
-  #B_2<-seq(0,100,length.out=S)[idx]
-  #B<-cbind(B_0,B_1,B_2) #SxK
-  #L<-X%*%t(B) #nxS
   
   K=sum(S/(S+(1:S)-1)) #104, his prior number of clusters when alpha=S
   if(type=="GJAM"){ cat("Prior expected number of clusters : ",K,"\n")}
@@ -91,7 +85,6 @@ simulation_fun_oneDS<-function(data_set,Sp, Ntr, rval,nsamples=500, Ktrue,q=20, 
   xdata<-data_set$xdata
   Y<-data_set$Y
   idx<- data_set$idx
-  
   Sigma_true<- data_set$S_true
   formula<-as.formula(~env1+env2)
   if(type=="GJAM"){
@@ -141,7 +134,7 @@ simulation_fun_oneDS<-function(data_set,Sp, Ntr, rval,nsamples=500, Ktrue,q=20, 
     pk_chains<- fit$chains$pk_g
   }
   if(type=="3"){
-    eps=0.01
+    eps=0.05
     # alp_sig<-as.data.frame(matrix(NA,nrow=20,ncol=3))
     # colnames(alp_sig)<-c("alpha","sigma","is_less_150")
     # alp_sig$sigma=seq(0.05,0.5,length.out = 20)
@@ -164,7 +157,7 @@ simulation_fun_oneDS<-function(data_set,Sp, Ntr, rval,nsamples=500, Ktrue,q=20, 
     
     
     N_eps<-floor(.compute_tau_mean(sigma_py,alpha.PY,eps) + 2*.compute_tau_var(sigma_py,alpha.PY,eps))
-    
+   # N_eps_tr<-max(N_eps,20)
     rl   <- list(r = r, N = N_eps, sigma_py=sigma_py, alpha=alpha.PY)
     ml<-list(ng=it,burnin=burn,typeNames='CON',reductList=rl)
     fit<-.gjam_3(formula,xdata,ydata=as.data.frame(Y),modelList = ml)
@@ -183,7 +176,7 @@ simulation_fun_oneDS<-function(data_set,Sp, Ntr, rval,nsamples=500, Ktrue,q=20, 
     for(i in 1:20){
       ####corrected added  -1
       func<-function(x) {(x/alp_sig[i,"sigma"])*(prod((x+alp_sig[i,"sigma"]+c(1:S)-1)/(x+c(1:S) -1))-1) - K_t}
-      alp_sig[i,"alpha"]<-.bisec(func,0.0001,100)
+      alp_sig[i,"alpha"]<-.bisec(func,0.01,100)
       N_eps<-floor(.compute_tau_mean(alp_sig[i,"sigma"], alp_sig[i,"alpha"],eps) + 2*.compute_tau_var(alp_sig[i,"sigma"], alp_sig[i,"alpha"],eps))
       ifelse(N_eps<=150,alp_sig[i,"is_less_150"]<-T,alp_sig[i,"is_less_150"]<-F)
       N_eps
@@ -216,10 +209,16 @@ simulation_fun_oneDS<-function(data_set,Sp, Ntr, rval,nsamples=500, Ktrue,q=20, 
     
   }
   trace<-apply(fit$chains$kgibbs,1,function(x) length(unique(x)))
-  ind_trace<- seq(1,it,by=1)
+  ind_trace<- seq(1,it,by=5)
   trace_short<- trace[ind_trace]
   df<-as.data.frame(trace)
   df$iter<-1:it
+  #plot(apply(fit$chains$kgibbs,1,function(x) length(unique(x))))
+  p<-ggplot(df, aes(y=trace, x=iter)) + geom_point() + 
+    labs(title=paste0("Trace plot for the number of groups K for S=",S," r=",r," true K=",K_t," type=",type), caption=paste0("Number of iterations: ",it," burnin: ",burn,"number of samples: ",nsamples))+
+    theme_bw() + theme(axis.text.x = element_text(angle = 0, hjust = 1,size = 10), strip.text = element_text(size = 15),legend.position = "top", plot.title = element_text(hjust = 0.5))+
+    geom_hline(yintercept = Ktrue,color = "red")
+  #plot(p)
   #####Weights plot
   if(type%in%c("0","1","2","3","4")){
     pk<- apply(fit$chains$pk_g[-c(1:burn),],2,mean)
@@ -291,7 +290,21 @@ simulation_fun_oneDS<-function(data_set,Sp, Ntr, rval,nsamples=500, Ktrue,q=20, 
   sigma_mean<-apply(sigma,c(1,2),mean)
   err<-sum((sigma_mean-Sigma_true)^2)/(Sp*Sp)
   rmspe<-fit$fit$rmspeAll
+  
+  ########Plot error graph
+  M_m<- as.vector(sigma_mean)
+  M_t<- as.vector(Sigma_true)
+  df_vs<- as.data.frame(M_m)
+  df_vs$M_t<- M_t
+  plot_vs <- ggplot(df_vs)+
+    aes(x = M_t, y = M_m)+geom_point()+geom_smooth(method = "lm") +  geom_abline(intercept = -min(M_t), slope = 1, color="red")+
+    labs(title=paste0(" True vs estimated covariance parameters"), caption=paste0("Number of iterations: ",it," burnin: ",burn,"number of samples: ",nsamples,"S=",S," r=",r," true K=",K_t," type=",type))+ xlab("True")+ylab("Estimated")+
+    theme_bw() + theme(axis.text.x = element_text(angle = 0, hjust = 1,size = 10), strip.text = element_text(size = 15),legend.position = "top", plot.title = element_text(hjust = 0.5))
+  
+  #plot(plot_vs)
+  
   plot_list<-list()
+  plot_list<-list.append(plot_list,p)
   if(type%in%c("1","2","4")){ 
     #plot(p_alpha_1)
     #plot(p_alpha_2)
@@ -308,14 +321,17 @@ simulation_fun_oneDS<-function(data_set,Sp, Ntr, rval,nsamples=500, Ktrue,q=20, 
     #plot(pl_weigths)
     plot_list<-list.append(plot_list,pl_weigths)
   }
-
+  #plot(plot_vs)
+  plot_list<-list.append(plot_list,plot_vs)
+  # dev.off()
+  #chain=fit$chains$kgibbs
   if(type%in%c("1","2","4")){ 
-    ind_alpha<- seq(1,length(alpha.chains), by =10)
+    ind_alpha<- seq(1,length(alpha.chains), by =1)
     alpha.chains_short<- alpha.chains[ind_alpha]
   }
   if(type%in%c("0","1","2","3","4")){ 
     pN_chain<- pk_chains[-c(1:burn),(Ntr-1)]
-    ind_pn<- seq(1,length(pN_chain), by =10)
+    ind_pn<- seq(1,length(pN_chain), by =1)
     pN_chain_short<- pN_chain[ind_pn]
   }
   # pl_list=plot_list
@@ -345,9 +361,6 @@ simulation_fun_oneDS<-function(data_set,Sp, Ntr, rval,nsamples=500, Ktrue,q=20, 
 ###########Simulation for Continous data case :small S K=4###################################################
 
 
-
-#####################################Simulation 2 K=10#######################################
-
 ####Small S, N==S, n=500
 
 list=list()
@@ -358,70 +371,180 @@ list5=list()
 list0=list()
 data_list=list()
 lk<-list()
-S_vec<-c(100)
-r_vec<-5
-n_vec<-c(10)
+S_vec<-c(500)
+r_vec<-c(5)
 k<-1
 it<-1000
 burn<-500
-Ktr<-4
+n_samples<-500
+Ktr<-50
 q<-20
+#path<- "/mnt/workspace/Gjammod/weights/"
+path<- "/home/dbystrov/Bureau/PY_comp0306/weights"
 
-path<- "/Users/bystrova/Documents/GitHub/gjamed/smalln"
 for(i in 1:length(S_vec)){
   data_list=list()
-  k=1
+  k<-1
   list=list()
   list2=list()
   list3=list()
   list4=list()
   list5=list()
   list0=list()
-  for(j in 1:length(n_vec)){
-    for(l in (1:5)){
-      data_list<- list.append(data_list,generate_data(Sp=S_vec[i],nsamples=n_vec[j],qval=q,Ktrue=Ktr))
-      names(data_list)[[l]]<-paste0("S_",S_vec[i],"_q_",q,"n_",n_vec[j],"_K_",Ktr,"_l",l)
-    }
-   #save(data_list, file = paste0("DS_S_",S_vec[i],"_q_",q,"_n_500_",Ktr,"ns",n_vec[j],".Rda"))
-   Ntrunc<-min(S_vec[i],150)
+  for(l in (1:3)){
+    data_list<- list.append(data_list,generate_data(Sp=S_vec[i],nsamples=n_samples,qval=q,Ktrue=Ktr))
+    names(data_list)[[l]]<-paste0("S_",S_vec[i],"_q_",q,"n_",n_samples,"_K_",Ktr,"_l",l)
+  }
+  #save(data_list, file = paste0("/mnt/workspace/Gjammod/sim_med/data/DS_S_",S_vec[i],"_q_",q,"_n_500_",Ktr,".Rda"))
+  Ntrunc<-min(S_vec[i],150)
+  
+  for(j in 1:length(r_vec)){
     ########GJAM  model list########################    
     # l0<-list()
-    # l0<- mclapply(data_list,simulation_fun_oneDS,Sp=S_vec[i], Ntr=Ntrunc, q=q,rval=r_vec,nsamples=n_vec[j], Ktrue=Ktr,it=it,burn=burn,type="GJAM")
-    # list<-list.append(list,assign(paste0("S_",S_vec[i],"_r_",r_vec,"_N_",S_vec[i],"_n_",n_vec[j],"_K",Ktr),l0))
-    # names(list)[[k]]<-paste0("S_",S_vec[i],"_r_5","_N_",S_vec[i],"_n_",n_vec[j],"_K",Ktr)
-    # save(list, file =paste0("/mnt/workspace/Gjammod/smalln/ODSim_smallS",S_vec[i],"K4_gjam.Rda"))
+    # l0<- mclapply(data_list,simulation_fun_oneDS,Sp=S_vec[i], Ntr=Ntrunc, q=q,rval=r_vec[j],nsamples=n_samples, Ktrue=Ktr,it=it,burn=burn,type="GJAM")
+    # list<-list.append(list,assign(paste0("S_",S_vec[i],"_r_",r_vec[j],"_N_",S_vec[i],"_n_",n_samples,"_K",Ktr),l0))
+    # names(list)[[k]]<-paste0("S_",S_vec[i],"_r_",r_vec[j],"_N_",S_vec[i],"_n_",n_samples,"_K",Ktr)
+    # save(list, file =paste0("/mnt/workspace/Gjammod/sim_med/ODBIGS",S_vec[i],"K4_gjam.Rda"))
     ########gjam 0  model list########################
     l00<-list()
-    l00<- lapply(data_list,simulation_fun_oneDS,Sp=S_vec[i], Ntr=Ntrunc, q=q,rval=r_vec,nsamples=n_vec[j], Ktrue=Ktr,it=it,burn=burn,type="0")
-    list0<-list.append(list0,assign(paste0("S_",S_vec[i],"_r_5_N_150_n_",n_vec[j],"_K",Ktr),l00))
-    names(list0)[[k]]<-paste0("S_",S_vec[i],"_r_",r_vec,"_N_150_n_500_K_",Ktr)
-   save(list0, file = paste0(path,"ODSim_smallS",S_vec[i],"K",Ktr,"_gjam0.Rda"))
+    l00<- lapply(data_list,simulation_fun_oneDS,Sp=S_vec[i], Ntr=Ntrunc, q=q,rval=r_vec[j],nsamples=n_samples, Ktrue=Ktr,it=it,burn=burn,type="0")
+    list0<-list.append(list0,assign(paste0("S_",S_vec[i],"_r_",r_vec[j],"_N_150_n_500_K_",Ktr),l00))
+    names(list0)[[k]]<-paste0("S_",S_vec[i],"_r_",r_vec[j],"_N_150_n_500_K_",Ktr)
+    save(list0, file = paste0(path,"ODSim_smallS",S_vec[i],"K",Ktr,"_gjam0.Rda"))
     ########gjam 1  model list######################## 
     l2<-list()
-    l2<- lapply(data_list,simulation_fun_oneDS,Sp=S_vec[i], Ntr=150, q=q,rval=r_vec,nsamples=n_vec[j], Ktrue=Ktr,it=it,burn=burn,type="1")
-    list2<-list.append(list2,assign(paste0("S_",S_vec[i],"_r_5_N_150_n_",n_vec[j],"_K",Ktr),l2))
-    names(list2)[[k]]<-paste0("S_",S_vec[i],"_r_",r_vec,"_N_150_n_500_K",Ktr)
+    l2<- lapply(data_list,simulation_fun_oneDS,Sp=S_vec[i], Ntr=150, q=q,rval=r_vec[j],nsamples=n_samples, Ktrue=Ktr,it=it,burn=burn,type="1")
+    list2<-list.append(list2,assign(paste0("S_",S_vec[i],"_r_",r_vec[j],"_N_150_n_500_K",Ktr),l2))
+    names(list2)[[k]]<-paste0("S_",S_vec[i],"_r_",r_vec[j],"_N_150_n_500_K",Ktr)
     save(list2, file = paste0(path,"ODSim_smallS",S_vec[i],"K",Ktr,"_type1.Rda"))
     ########gjam 2  model list########################    
     l3<-list()
-    l3<- lapply(data_list,simulation_fun_oneDS,Sp=S_vec[i], Ntr=Ntrunc, q=q,rval=r_vec,nsamples=n_vec[j], Ktrue=Ktr,it=it,burn=burn,type="2")
-    list3<-list.append(list3,assign(paste0("S_",S_vec[i],"_r_5_N_150_n_",n_vec[j],"_K",Ktr),l3))
-    names(list3)[[k]]<-paste0("S_",S_vec[i],"_r_5_N_150_n_500_K",Ktr)
+    l3<- lapply(data_list,simulation_fun_oneDS,Sp=S_vec[i], Ntr=Ntrunc, q=q,rval=r_vec[j],nsamples=n_samples, Ktrue=Ktr,it=it,burn=burn,type="2")
+    list3<-list.append(list3,assign(paste0("S_",S_vec[i],"_r_",r_vec[j],"_N_150_n_500_K",Ktr),l3))
+    names(list3)[[k]]<-paste0("S_",S_vec[i],"_r_",r_vec[j],"_N_150_n_500_K",Ktr)
     save(list3, file = paste0(path,"ODSim_smallS",S_vec[i],"K",Ktr,"_type2.Rda"))
     ########gjam 3  model list########################    
     l4<-list()
-    l4<- lapply(data_list,simulation_fun_oneDS,Sp=S_vec[i], Ntr=150, q=q,rval=r_vec,nsamples=n_vec[j], Ktrue=Ktr,it=it,burn=burn,type="3")
-    list4<-list.append(list4,assign(paste0("S_",S_vec[i],"_r_5_N_150_n_",n_vec[j],"_K",Ktr),l4))
-    names(list4)[[k]]<-paste0("S_",S_vec[i],"_r_5_N_150_n_500_K",Ktr)
+    l4<- lapply(data_list,simulation_fun_oneDS,Sp=S_vec[i], Ntr=150, q=q,rval=r_vec[j],nsamples=n_samples, Ktrue=Ktr,it=it,burn=burn,type="3")
+    list4<-list.append(list4,assign(paste0("S_",S_vec[i],"_r_",r_vec[j],"_N_150_n_500_K",Ktr),l4))
+    names(list4)[[k]]<-paste0("S_",S_vec[i],"_r_",r_vec[j],"_N_150_n_500_K",Ktr)
     save(list4, file = paste0(path,"ODSim_smallS",S_vec[i],"K",Ktr,"_type3.Rda"))
     ########gjam 4  model list########################    
     l5<-list()
-    l5<- lapply(data_list,simulation_fun_oneDS,Sp=S_vec[i], Ntr=150, q=q,rval=r_vec,nsamples=n_vec[j], Ktrue=Ktr,it=it,burn=burn,type="4")
-    list5<-list.append(list5,assign(paste0("S_",S_vec[i],"_r_5_N_150_n_500_K",Ktr),l5))
-    names(list5)[[k]]<-paste0("S_",S_vec[i],"_r_5_N_150_n_",n_vec[j],"_K",Ktr)
+    l5<- lapply(data_list,simulation_fun_oneDS,Sp=S_vec[i], Ntr=150, q=q,rval=r_vec[j],nsamples=n_samples, Ktrue=Ktr,it=it,burn=burn,type="4")
+    list5<-list.append(list5,assign(paste0("S_",S_vec[i],"_r_",r_vec[j],"_N_150_n_500_K",Ktr),l5))
+    names(list5)[[k]]<-paste0("S_",S_vec[i],"_r_",r_vec[j],"_N_150_n_500_K",Ktr)
     save(list5, file = paste0(path,"ODSim_smallS",S_vec[i],"K",Ktr,"_type4.Rda"))
     k=k+1
   }
- 
+  
 }
 
+# 
+# 
+# Ltgj0<- list0
+# LtT1<-list2
+# LtT2<-list3
+# LtT3<-list4
+# LtT4<-list5
+# 
+# 
+# 
+# 
+# 
+# 
+# S_vec<-c(300)
+# r_vec<-c(5)
+# modn<-5
+# dsnum<-2
+# burn<-100
+# it<- 50
+# nsamples<-500
+# 
+# 
+# table_comp<-as.data.frame(matrix(NA, nrow=length(r_vec)*length(S_vec)*modn*dsnum, ncol=1))
+# table_comp$S<- rep(S_vec, each=modn*length(r_vec)*dsnum)
+# table_comp$mod<- rep(c("gjam","gjam1","gjam2","gjam3","gjam4"), length(r_vec)*length(S_vec), each=dsnum)
+# table_comp$num<- rep(1, each=dsnum)
+# table_comp$rv<- rep(c(5), each=dsnum, length(S_vec))
+# table_comp$avnum<- rep(1:2, modn)
+# for(i in (1: nrow(table_comp))){
+#   j<-table_comp$num[i]
+#   jm<-table_comp$avnum[i]
+#   table_comp$Schar[i]<- paste0("S=",table_comp$S[i])
+#   if((table_comp$mod[i]=="gjam")&(length(grep(paste0("r_",table_comp$rv[i]),names(Ltgj0)[j]))>0)){
+#     table_comp$res[i]<- mean(Ltgj0[[j]][[jm]]$trace)
+#     table_comp$lweight[i]<- mean(Ltgj0[[j]][[jm]]$pkN)
+#     table_comp$fit_err[i]<- Ltgj0[[j]][[jm]]$fit
+#     table_comp$err[i]<- Ltgj0[[j]][[jm]]$err
+#   }
+#   if((table_comp$mod[i]=="gjam1")&(length(grep(paste0("r_",table_comp$rv[i]),names(LtT1)[j]))>0)){
+#     table_comp$res[i]<-  mean(LtT1[[j]][[jm]]$trace)
+#     table_comp$lweight[i]<- mean(LtT1[[j]][[jm]]$pkN)
+#     table_comp$fit_err[i]<- LtT1[[j]][[jm]]$fit
+#     table_comp$err[i]<- LtT1[[j]][[jm]]$err
+#   }
+#   if((table_comp$mod[i]=="gjam2")&(length(grep(paste0("r_",table_comp$rv[i]),names(LtT2)[j]))>0)){
+#     table_comp$res[i]<- mean(LtT2[[j]][[jm]]$trace)
+#     table_comp$lweight[i]<- mean(LtT2[[j]][[jm]]$pkN)
+#     table_comp$fit_err[i]<- LtT2[[j]][[jm]]$fit
+#     table_comp$err[i]<- LtT2[[j]][[jm]]$err
+#   }
+#   if((table_comp$mod[i]=="gjam3")&(length(grep(paste0("r_",table_comp$rv[i]),names(LtT3)[j]))>0)){
+#     table_comp$res[i]<-  mean(LtT3[[j]][[jm]]$trace)
+#     table_comp$lweight[i]<-  mean(LtT3[[j]][[jm]]$pkN)
+#     table_comp$fit_err[i]<- LtT3[[j]][[jm]]$fit
+#     table_comp$err[i]<- LtT3[[j]][[jm]]$err
+#   }
+#   if((table_comp$mod[i]=="gjam4")&(length(grep(paste0("r_",table_comp$rv[i]),names(LtT4)[j]))>0)){
+#     table_comp$res[i]<- mean(LtT4[[j]][[jm]]$trace)
+#     table_comp$lweight[i]<-  mean(LtT4[[j]][[jm]]$pkN)
+#     table_comp$fit_err[i]<- LtT4[[j]][[jm]]$fit
+#     table_comp$err[i]<- LtT4[[j]][[jm]]$err
+#   }
+#   
+# }
+# 
+# 
+# 
+# 
+# 
+# table_comp$Schar <- factor(table_comp$Schar, levels=c('S=300'))
+# table_comp<-table_comp[,-1]
+# ##########################################################################################
+# 
+# q_clust<-  ggplot(data= table_comp) +geom_boxplot(aes(x=as.factor(rv),y= as.numeric(res), fill = as.factor(mod)))+
+#   scale_x_discrete(name="Parameters", breaks=c("5"),
+#                    labels=c("r=5"),limits=c("5"))+
+#   scale_y_continuous(name="Number of clusters",limits=c(0,30),breaks=seq(2,10,by=2))+
+#   scale_fill_discrete(name = "Models", labels = c("GJAM","GJAM1","GJAM2","GJAM3","GJAM4"))+theme(axis.text.x = element_text(angle = 45, hjust = 1),legend.position="top")+
+#   facet_wrap( ~ Schar, strip.position = "bottom", scales = "free_x")+ ylab("Posterior mean") +
+#   labs(title="Ability to recover true number of groups for all models", caption=paste0("Number of iterations: ",it," burnin: ",burn," number of samples: ",nsamples))+
+#   geom_hline(yintercept = 20,color = "red")+theme_bw()+theme(panel.spacing = unit(0, "lines"),
+#                                                             strip.background = element_blank(),
+#                                                             strip.placement = "outside",legend.position = "top", plot.title = element_text(hjust = 0.5))
+# q_clust
+# 
+# 
+# 
+# ######################################################################
+# 
+# 
+# 
+# q_weight<- ggplot(data= table_comp) +geom_boxplot(aes(x=as.factor(rv),y= as.numeric(lweight), fill = as.factor(mod))) +
+#   scale_x_discrete(name="Parameters", breaks=c("5"),
+#                    labels=c("r=5"),limits=c("5"))+
+#   scale_y_continuous(name=expression(p[N]),limits=c(0,0.3))+
+#   scale_fill_discrete(name = "Models", labels = c("GJAM","GJAM1","GJAM2","GJAM3","GJAM4"))+theme(axis.text.x = element_text(angle = 45, hjust = 1),legend.position="top")+
+#   facet_wrap( ~ Schar, strip.position = "bottom", scales = "free_x") +
+#   labs(title=expression(paste("Last ",p[N]," weight value for all models")), caption=paste0("Number of iterations: ",it," burnin: ",burn," number of samples: ",nsamples))+
+#   theme_bw()+theme(panel.spacing = unit(0, "lines"),strip.background = element_blank(),strip.placement = "outside",legend.position = "top", plot.title = element_text(hjust = 0.5))
+# q_weight
+# 
+# 
+# 
+# 
+# 
+# 
+# 
+# 
