@@ -367,13 +367,11 @@ n_samples<-500
 l<-1
 it<-5000
 burn<-200
+
 data_set<- generate_data(Sp=S_vec,nsamples=n_samples,qval=q,Ktrue=Ktr)
 save(data_set, file = paste0("data/DS_S_",S_vec,"_q_",q,"_n_500_",Ktr,"l_",l,".Rda"))
 list0<-list2<-list3<-list4<-list5<-NULL
-#list<-list.append(list,assign(paste0("S_",S_vec,"_r_",r_vec,"_N_150_n_500_K_",Ktr,"l_",l),simulation_fun_oneDS(data_set,Sp=S_vec, Ntr=S_vec, q=20,rval=r_vec,nsamples=n_samples, Ktrue=Ktr,it=it,burn=burn,type="GJAM")))
-#names(list)<-paste0("S_",S_vec,"_r_",r_vec,"_N_150_n_500_K_",Ktr,"l_",l)
 list0<-list.append(list0,assign(paste0("S_",S_vec,"_r_",r_vec,"_N_150_n_500_K_",Ktr,"l_",l),simulation_fun_oneDS(data_set,Sp=S_vec, Ntr=S_vec, q=20,rval=r_vec,nsamples=n_samples, Ktrue=Ktr,it=it,burn=burn,type="0")))
-#names(list0)<-paste0("S_",S_vec,"_r_",r_vec,"_N_150_n_500_K_",Ktr,"l_",l)
 list2<-list.append(list2,assign(paste0("S_",S_vec,"_r_",r_vec,"_N_150_n_500_K",Ktr,"l_",l),simulation_fun_oneDS(data_set,Sp=S_vec, Ntr=150,q=20, rval=r_vec,nsamples=n_samples, Ktrue=Ktr,it=it,burn=burn,type="1")))
 #names(list2)<-paste0("S_",S_vec,"_r_",r_vec,"_N_150_n_500_K",Ktr,"l_",l)
 list3<-list.append(list3,assign(paste0("S_",S_vec,"_r_",r_vec,"_N_150_n_500_K",Ktr,"l_",l),simulation_fun_oneDS(data_set,Sp=S_vec, Ntr=S_vec,q=20, rval=r_vec,nsamples=n_samples, Ktrue=Ktr,it=it,burn=burn,type="2")))
@@ -382,10 +380,10 @@ list4<-list.append(list4,assign(paste0("S_",S_vec,"_r_",r_vec,"_N_150_n_500_K",K
 #names(list4)<-paste0("S_",S_vec,"_r_",r_vec,"_N_150_n_500_K",Ktr,"l_",l)
 list5<-list.append(list5,assign(paste0("S_",S_vec,"_r_",r_vec,"_N_150_n_500_K",Ktr,"l_",l),simulation_fun_oneDS(data_set,Sp=S_vec, Ntr=S_vec,q=20, rval=r_vec,nsamples=n_samples, Ktrue=Ktr,it=it,burn=burn,type="4")))
 #names(list5)<-paste0("S_",S_vec,"_r_",r_vec,"_N_150_n_500_K",Ktr,"l_",l)
-x_1<-x_2<-x_3<-x_4<-1:160
-for(i in 0:3){
-for(j in 8:49) assign(paste0("x_",i+1),c(get(paste0("x_",i+1)), (5*(4*j+i)+1):(5*(4*j+i)+5)))
-}
+# x_1<-x_2<-x_3<-x_4<-1:160
+# for(i in 0:3){
+# for(j in 8:49) assign(paste0("x_",i+1),c(get(paste0("x_",i+1)), (5*(4*j+i)+1):(5*(4*j+i)+5)))
+# }
 
 list<-list(list0,list3,list4,list5)
 # table<-data.frame()
@@ -425,8 +423,159 @@ p<-ggplot(table, aes(x=x,y=trace,col=as.factor(type)))+geom_point()+
    scale_color_manual(name = c(""), values = cols, labels=c("Original model","DP with prior on alpha","PY with fixed alpha, sigma","PY with prior on alpha, sigma"))
 p
 
+list0$err
+list3$err
+list4$err
+list5$err
 
-table_K_10_S_500_r_5<-table
-save(table_K_10_S_500_r_5,file="table_K_10_S_500_r_5.rda")
-for(j in 1:250) ((j*i):(j*i+5))
+
+# 
+# table_K_10_S_100_r_5_mean<-table
+# save(table_K_10_S_100_r_5_mean,file="table_K_10_S_100_r_5_mean.rda")
+
+l<-1
+data_set<- generate_data(Sp=S_vec,nsamples=n_samples,qval=q,Ktrue=Ktr)
+#save(data_set, file = paste0("data/DS_S_",S_vec,"_q_",q,"_n_500_",Ktr,"l_",l,".Rda"))
+list0<-assign(paste0("S_",S_vec,"_r_",r_vec,"_N_150_n_500_K_",Ktr,"l_",l),simulation_fun_oneDS(data_set,Sp=S_vec, Ntr=S_vec, q=20,rval=r_vec,nsamples=n_samples, Ktrue=Ktr,it=it,burn=burn,type="0"))
+list2<-assign(paste0("S_",S_vec,"_r_",r_vec,"_N_150_n_500_K",Ktr,"l_",l),simulation_fun_oneDS(data_set,Sp=S_vec, Ntr=150,q=20, rval=r_vec,nsamples=n_samples, Ktrue=Ktr,it=it,burn=burn,type="1"))
+list3<-assign(paste0("S_",S_vec,"_r_",r_vec,"_N_150_n_500_K",Ktr,"l_",l),simulation_fun_oneDS(data_set,Sp=S_vec, Ntr=S_vec,q=20, rval=r_vec,nsamples=n_samples, Ktrue=Ktr,it=it,burn=burn,type="2"))
+list4<-assign(paste0("S_",S_vec,"_r_",r_vec,"_N_150_n_500_K",Ktr,"l_",l),simulation_fun_oneDS(data_set,Sp=S_vec, Ntr=S_vec,q=20, rval=r_vec,nsamples=n_samples, Ktrue=Ktr,it=it,burn=burn,type="3"))
+list5<-assign(paste0("S_",S_vec,"_r_",r_vec,"_N_150_n_500_K",Ktr,"l_",l),simulation_fun_oneDS(data_set,Sp=S_vec, Ntr=S_vec,q=20, rval=r_vec,nsamples=n_samples, Ktrue=Ktr,it=it,burn=burn,type="4"))
+
+
+
+list0<-list2<-list3<-list4<-list5<-NULL
+for(l in 2:5){
+  data_set<- generate_data(Sp=S_vec,nsamples=n_samples,qval=q,Ktrue=Ktr)
+  #save(data_set, file = paste0("data/DS_S_",S_vec,"_q_",q,"_n_500_",Ktr,"l_",l,".Rda"))
+  list0<-list.append(list0,assign(paste0("S_",S_vec,"_r_",r_vec,"_N_150_n_500_K_",Ktr,"l_",l),simulation_fun_oneDS(data_set,Sp=S_vec, Ntr=S_vec, q=20,rval=r_vec,nsamples=n_samples, Ktrue=Ktr,it=it,burn=burn,type="0")))
+  list2<-list.append(list2,assign(paste0("S_",S_vec,"_r_",r_vec,"_N_150_n_500_K",Ktr,"l_",l),simulation_fun_oneDS(data_set,Sp=S_vec, Ntr=150,q=20, rval=r_vec,nsamples=n_samples, Ktrue=Ktr,it=it,burn=burn,type="1")))
+  list3<-list.append(list3,assign(paste0("S_",S_vec,"_r_",r_vec,"_N_150_n_500_K",Ktr,"l_",l),simulation_fun_oneDS(data_set,Sp=S_vec, Ntr=S_vec,q=20, rval=r_vec,nsamples=n_samples, Ktrue=Ktr,it=it,burn=burn,type="2")))
+  list4<-list.append(list4,assign(paste0("S_",S_vec,"_r_",r_vec,"_N_150_n_500_K",Ktr,"l_",l),simulation_fun_oneDS(data_set,Sp=S_vec, Ntr=S_vec,q=20, rval=r_vec,nsamples=n_samples, Ktrue=Ktr,it=it,burn=burn,type="3")))
+  list5<-list.append(list5,assign(paste0("S_",S_vec,"_r_",r_vec,"_N_150_n_500_K",Ktr,"l_",l),simulation_fun_oneDS(data_set,Sp=S_vec, Ntr=S_vec,q=20, rval=r_vec,nsamples=n_samples, Ktrue=Ktr,it=it,burn=burn,type="4")))
+}
+
+# 
+# tmp_list<-list(trace=list0$trace,
+#                idx=list0$idx,K=list0$K,
+#                alpha=list0$alpha,alpha.chains=list0$alpha.chains,pk_val=list0$pk_val, pkN=list0$pkN, 
+#                coeff_t=list0$coeff_f,coeff_f=list0$coeff_f,
+#                err=list0$err,fit=list0$fit)
+# list0<-list(tmp_list,list0[[12]],list0[[13]],list0[[14]],list0[[15]])
+# 
+# tmp_list<-list(trace=list2$trace,
+#                idx=list2$idx,K=list2$K,
+#                alpha=list2$alpha,alpha.chains=list2$alpha.chains,pk_val=list2$pk_val, pkN=list2$pkN, 
+#                coeff_t=list2$coeff_f,coeff_f=list2$coeff_f,
+#                err=list2$err,fit=list2$fit)
+# list2<-list(tmp_list,list2[[12]],list2[[13]],list2[[14]],list2[[15]])
+# 
+# tmp_list<-list(trace=list3$trace,
+#                idx=list3$idx,K=list3$K,
+#                alpha=list3$alpha,alpha.chains=list3$alpha.chains,pk_val=list3$pk_val, pkN=list3$pkN, 
+#                coeff_t=list3$coeff_f,coeff_f=list3$coeff_f,
+#                err=list3$err,fit=list3$fit)
+# list3<-list(tmp_list,list3[[12]],list3[[13]],list3[[14]],list3[[15]])
+# 
+# tmp_list<-list(trace=list4$trace,
+#                idx=list4$idx,K=list4$K,
+#                alpha=list4$alpha,alpha.chains=list4$alpha.chains,pk_val=list4$pk_val, pkN=list4$pkN, 
+#                coeff_t=list4$coeff_f,coeff_f=list4$coeff_f,
+#                err=list4$err,fit=list4$fit)
+# list4<-list(tmp_list,list4[[12]],list4[[13]],list4[[14]],list4[[15]])
+# 
+# tmp_list<-list(trace=list5$trace,
+#                idx=list5$idx,K=list5$K,
+#                alpha=list5$alpha,alpha.chains=list5$alpha.chains,pk_val=list5$pk_val, pkN=list5$pkN, 
+#                coeff_t=list5$coeff_f,coeff_f=list5$coeff_f,
+#                err=list5$err,fit=list5$fit)
+# list5<-list(tmp_list,list5[[12]],list5[[13]],list5[[14]],list5[[15]])
+# table<-data.frame()
+# for(i in 1:length(list)){
+#   str<-names(list)[[i]]
+#   tmp<-data.frame("trace"=list[[i]]$trace[get(paste0("x_",i))],"S"=rep(S_vec,length(list[[i]]$trace[get(paste0("x_",i))])),
+#                   "type"=rep(i-1,length(list[[i]]$trace[get(paste0("x_",i))])),
+#                   "x"=get(paste0("x_",i)))
+#   table<-rbind(table,tmp)
+# }
+
+
+table_0<-data.frame()
+for(i in 1:length(list0)){
+  table_0[i,"err"]<-list0[[i]]$err
+  table_0[i,"K_mean"]<-mean(list0[[i]]$trace)
+  table_0[i,"K_last"]<-mean(list0[[i]]$trace[length(list0[[i]]$trace)])
+  table_0[i,"type"]<-"0"
+  table_0[i,"S"]<-S_vec
+  table_0[i,"Ktr"]<-Ktr
+}
+
+table_2<-data.frame()
+for(i in 1:length(list2)){
+  table_2[i,"err"]<-list2[[i]]$err
+  table_2[i,"K_mean"]<-mean(list2[[i]]$trace)
+  table_2[i,"K_last"]<-mean(list2[[i]]$trace[length(list2[[i]]$trace)])
+  table_2[i,"type"]<-"2"
+  table_2[i,"S"]<-S_vec
+  table_2[i,"Ktr"]<-Ktr
+}
+table_3<-data.frame()
+for(i in 1:length(list3)){
+  table_3[i,"err"]<-list3[[i]]$err
+  table_3[i,"K_mean"]<-mean(list3[[i]]$trace)
+  table_3[i,"K_last"]<-mean(list3[[i]]$trace[length(list3[[i]]$trace)])
+  table_3[i,"type"]<-"3"
+  table_3[i,"S"]<-S_vec
+  table_3[i,"Ktr"]<-Ktr
+}
+table_4<-data.frame()
+for(i in 1:length(list4)){
+  table_4[i,"err"]<-list4[[i]]$err
+  table_4[i,"K_mean"]<-mean(list4[[i]]$trace)
+  table_4[i,"K_last"]<-mean(list4[[i]]$trace[length(list4[[i]]$trace)])
+  table_4[i,"type"]<-"4"
+  table_4[i,"S"]<-S_vec
+  table_4[i,"Ktr"]<-Ktr
+}
+table_5<-data.frame()
+for(i in 1:length(list5)){
+  table_5[i,"err"]<-list5[[i]]$err
+  table_5[i,"K_mean"]<-mean(list5[[i]]$trace)
+  table_5[i,"K_last"]<-mean(list5[[i]]$trace[length(list5[[i]]$trace)])
+  table_5[i,"type"]<-"5"
+  table_5[i,"S"]<-S_vec
+  table_5[i,"Ktr"]<-Ktr
+}
+table<-rbind(table_0,table_2,table_3,table_4,table_5)
+
+#plots
+gg_color_hue <- function(n) {
+  hues = seq(15, 375, length = n + 1)
+  hcl(h = hues, l = 65, c = 100)[1:n]
+}
+cols = gg_color_hue(5)
+p_err<-ggplot(table)+geom_boxplot(aes(x=as.factor(type),y= sqrt(as.numeric(err)), fill = as.factor(type)))+
+  scale_fill_discrete(name = c("Models"), labels=c("Original model","DP with prior on alpha 1","DP with prior on alpha 2","PY with fixed alpha, sigma","PY with prior on alpha, sigma"))+
+  labs(title=paste0("Error in estimating the covariance matrix. S=",S_vec," r=",r_vec," Ktr=",Ktr), caption=paste0("Number of iterations: ",it," burnin: ",burn," number of samples: ",n_samples))+
+  ylab("Frobenius norm of the error")+xlab("")
+pdf(paste0("plots/with_mean_SIGMA_ERROR_S_",S_vec," r=",r_vec," Ktr=",Ktr,".pdf"))
+p_err
+dev.off()
+
+p_K<-ggplot(table)+geom_boxplot(aes(x=as.factor(type),y= as.numeric(K_mean), fill = as.factor(type)))+
+  scale_fill_discrete(name = c("Models"), labels=c("Original model","DP with prior on alpha 1","DP with prior on alpha 2","PY with fixed alpha, sigma","PY with prior on alpha, sigma"))+
+  labs(title=paste0("Posterior mean of the retrieved number of clusters. S=",S_vec," r=",r_vec," Ktr=",Ktr), caption=paste0("Number of iterations: ",it," burnin: ",burn," number of samples: ",n_samples))+
+  ylab("Posterior mean of the retrieved number of clusters")+xlab("")+geom_hline(yintercept = Ktr,col="red")
+pdf(paste0("plots/with_mean_POST_MEAN_CLUST_S_",S_vec," r=",r_vec," Ktr=",Ktr,".pdf"))
+p_K
+dev.off()
+
+p_K_last<-ggplot(table)+geom_boxplot(aes(x=as.factor(type),y= as.numeric(K_last), fill = as.factor(type)))+
+  scale_fill_discrete(name = c("Models"), labels=c("Original model","DP with prior on alpha 1","DP with prior on alpha 2","PY with fixed alpha, sigma","PY with prior on alpha, sigma"))+
+  labs(title=paste0("Last traceplot element of the retrieved number of clusters. S=",S_vec," r=",r_vec," Ktr=",Ktr), caption=paste0("Number of iterations: ",it," burnin: ",burn," number of samples: ",n_samples))+
+  ylab("Last traceplot element of the retrieved number of clusters")+xlab("")+geom_hline(yintercept = Ktr,col="red")
+pdf(paste0("plots/with_mean_CLUST_LAST_S_",S_vec," r=",r_vec," Ktr=",Ktr,".pdf"))
+p_K_last
+dev.off()
+
 
