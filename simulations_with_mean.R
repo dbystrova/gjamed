@@ -368,6 +368,8 @@ l<-1
 it<-5000
 burn<-200
 
+#####################################################################################
+#one dataset only
 data_set<- generate_data(Sp=S_vec,nsamples=n_samples,qval=q,Ktrue=Ktr)
 save(data_set, file = paste0("data/DS_S_",S_vec,"_q_",q,"_n_500_",Ktr,"l_",l,".Rda"))
 list0<-list2<-list3<-list4<-list5<-NULL
@@ -433,6 +435,9 @@ list5$err
 # table_K_10_S_100_r_5_mean<-table
 # save(table_K_10_S_100_r_5_mean,file="table_K_10_S_100_r_5_mean.rda")
 
+
+#####################################################################################
+#5 datasets
 l<-1
 data_set<- generate_data(Sp=S_vec,nsamples=n_samples,qval=q,Ktrue=Ktr)
 #save(data_set, file = paste0("data/DS_S_",S_vec,"_q_",q,"_n_500_",Ktr,"l_",l,".Rda"))
