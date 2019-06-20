@@ -65,8 +65,15 @@ fit2$fit$rmspeAll #2.209276
 fit3$fit$rmspeAll #2.203517
 fit4$fit$rmspeAll #2.092136
 
+fit$fit$DIC   #2510192
+fit1$fit$DIC  #2496028
+fit2$fit$DIC  #2505273
+fit3$fit$DIC  #2496243
+fit4$fit$DIC  #2460125
+
+
 #check that alpha and sigma posteriors
-#gjam1
+#gjam1  
 alpha<-mcmc(fit1$chains$alpha.DP_g)
 plot(alpha)
 acfplot(alpha)

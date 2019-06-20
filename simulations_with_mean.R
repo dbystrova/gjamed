@@ -49,9 +49,9 @@ generate_data<-function(Sp=50,nsamples=500,qval=20,Ktrue=4){
   Sigma<-Lambda%*%t(Lambda)+0.1*diag(S) #SxS
   Sigma_true<-Sigma
   Y<-vector()
-  for(i in 1:n){
-  Y<-rbind(Y,mvrnorm(1, mu=L[i,], Sigma=Sigma))
-  }
+   for(i in 1:n){
+   Y<-rbind(Y,mvrnorm(1, mu=L[i,], Sigma=Sigma))
+   }
   #Y<-mvrnorm(n = n, mu=rep(0,S), Sigma=Sigma)
   xdata<-as.data.frame(X[,-1])
   colnames(xdata)<-c("env1","env2")
@@ -382,12 +382,13 @@ list4<-list.append(list4,assign(paste0("S_",S_vec,"_r_",r_vec,"_N_150_n_500_K",K
 #names(list4)<-paste0("S_",S_vec,"_r_",r_vec,"_N_150_n_500_K",Ktr,"l_",l)
 list5<-list.append(list5,assign(paste0("S_",S_vec,"_r_",r_vec,"_N_150_n_500_K",Ktr,"l_",l),simulation_fun_oneDS(data_set,Sp=S_vec, Ntr=S_vec,q=20, rval=r_vec,nsamples=n_samples, Ktrue=Ktr,it=it,burn=burn,type="4")))
 #names(list5)<-paste0("S_",S_vec,"_r_",r_vec,"_N_150_n_500_K",Ktr,"l_",l)
-# x_1<-x_2<-x_3<-x_4<-1:160
+#x_1<-x_2<-x_3<-x_4<-1:20
+# x_1<-x_2<-x_3<-x_4<-1:20
 # for(i in 0:3){
-# for(j in 8:49) assign(paste0("x_",i+1),c(get(paste0("x_",i+1)), (5*(4*j+i)+1):(5*(4*j+i)+5)))
+# for(j in 1:49) assign(paste0("x_",i+1),c(get(paste0("x_",i+1)), (5*(4*j+i)+1):(5*(4*j+i)+5)))
 # }
 
-list<-list(list0,list3,list4,list5)
+# list<-list(list0,list3,list4,list5)
 # table<-data.frame()
 # for(i in 1:length(list)){
 #   str<-names(list)[[i]]
@@ -422,8 +423,12 @@ p4<-ggplot(table[which(table$type=="3"),], aes(x=table$x[which(table$type=="3")]
 p4
 
 p<-ggplot(table, aes(x=x,y=trace,col=as.factor(type)))+geom_point()+
-   scale_color_manual(name = c(""), values = cols, labels=c("Original model","DP with prior on alpha","PY with fixed alpha, sigma","PY with prior on alpha, sigma"))
+   scale_color_manual(name = c(""), values = cols, labels=c("Original model","DP with prior on alpha","PY with fixed alpha, sigma","PY with prior on alpha, sigma"))+
+   labs(title="Trace of the number of clusters for the different models. S=100")+xlab("iterations")+theme_bw()
+pdf("plots/POSTER_plot.pdf")
 p
+dev.off()
+
 
 list0$err
 list3$err
