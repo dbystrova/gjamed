@@ -25,6 +25,7 @@ source_data(d)
 xdata <- forestTraits$xdata[,c(1,2,8)]
 y  <- gjamReZero(forestTraits$treesDeZero)  # extract y
 treeYdata  <- gjamTrimY(y,10)$y             # at least 10 plots
+treeYdataPA<- apply(treeYdata,c(1,2),function(x){ifelse(x>0,1,0)})
 form <- as.formula( ~ temp*deficit + I(temp^2) + I(deficit^2) )
 S<-ncol(treeYdata) #95
 it<-5000
@@ -39,25 +40,25 @@ rl3   <- list(r = 8, N = N_eps, sigma_py=0.3, alpha=2)
 
 
 N_eps<-floor(.compute_tau_mean(0.5,10,0.1) + 2*.compute_tau_var(0.5,10,0.1))
-rl4   <- list(r = 8, N = N_eps,rate=0.1,shape=0.1,V1=5,ro.disc=0.5) #here to modify N
+rl4   <- list(r = 5, N = N_eps,rate=0.1,shape=0.1,V1=5,ro.disc=0.5) #here to modify N
 
-ml4   <- list(ng = it, burnin = burn, typeNames = 'DA', reductList = rl4) #change ml
-ml3   <- list(ng = it, burnin = burn, typeNames = 'DA', reductList = rl3) #change ml
-ml2   <- list(ng = it, burnin = burn, typeNames = 'DA', reductList = rl2) #change ml
-ml1   <- list(ng = it, burnin = burn, typeNames = 'DA', reductList = rl1) #change ml
-ml   <- list(ng = it, burnin = burn, typeNames = 'DA', reductList = rl) #change ml
+ml4   <- list(ng = it, burnin = burn, typeNames = 'PA', reductList = rl4) #change ml
+ml3   <- list(ng = it, burnin = burn, typeNames = 'PA', reductList = rl3) #change ml
+ml2   <- list(ng = it, burnin = burn, typeNames = 'PA', reductList = rl2) #change ml
+ml1   <- list(ng = it, burnin = burn, typeNames = 'PA', reductList = rl1) #change ml
+ml   <- list(ng = it, burnin = burn, typeNames = 'PA', reductList = rl) #change ml
 
 
-fit<-.gjam0(form, xdata = xdata, ydata = treeYdata, modelList = ml)
-save(fit,file="models_forest_data/fit.Rda")
-fit1<-.gjam_1(form, xdata = xdata, ydata = treeYdata, modelList = ml1)
-save(fit1,file="models_forest_data/fit1.Rda")
-fit2<-.gjam_2(form, xdata = xdata, ydata = treeYdata, modelList = ml2)
-save(fit2,file="models_forest_data/fit2.Rda")
+fit<-.gjam0(form, xdata = xdata, ydata = treeYdataPA, modelList = ml)
+save(fit,file="models_forest_data_PA/fit.Rda")
+fit1<-.gjam_1(form, xdata = xdata, ydata = treeYdataPA, modelList = ml1)
+save(fit1,file="models_forest_data_PA/fit1.Rda")
+fit2<-.gjam_2(form, xdata = xdata, ydata = treeYdataPA, modelList = ml2)
+save(fit2,file="models_forest_data_PA/fit2.Rda")
 fit3 <- .gjam_3(form,xdata,treeYdata,ml3)
-save(fit3,file="models_forest_data/fit3.Rda")
-fit4<-.gjam_4(form, xdata = xdata, ydata = treeYdata, modelList = ml4)
-save(fit4,file="models_forest_data/fit4.Rda")
+save(fit3,file="models_forest_data_PA/fit3.Rda")
+fit4<-.gjam_4(form, xdata = xdata, ydata = treeYdataPA, modelList = ml4)
+save(fit4,file="models_forest_data_PA/fit4.Rda")
 
 fit$fit$rmspeAll  #2.257202
 fit1$fit$rmspeAll #2.205223
