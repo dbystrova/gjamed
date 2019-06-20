@@ -382,12 +382,11 @@ list4<-list.append(list4,assign(paste0("S_",S_vec,"_r_",r_vec,"_N_150_n_500_K",K
 #names(list4)<-paste0("S_",S_vec,"_r_",r_vec,"_N_150_n_500_K",Ktr,"l_",l)
 list5<-list.append(list5,assign(paste0("S_",S_vec,"_r_",r_vec,"_N_150_n_500_K",Ktr,"l_",l),simulation_fun_oneDS(data_set,Sp=S_vec, Ntr=S_vec,q=20, rval=r_vec,nsamples=n_samples, Ktrue=Ktr,it=it,burn=burn,type="4")))
 #names(list5)<-paste0("S_",S_vec,"_r_",r_vec,"_N_150_n_500_K",Ktr,"l_",l)
-#x_1<-x_2<-x_3<-x_4<-1:20
 # x_1<-x_2<-x_3<-x_4<-1:20
-# for(i in 0:3){
-# for(j in 1:49) assign(paste0("x_",i+1),c(get(paste0("x_",i+1)), (5*(4*j+i)+1):(5*(4*j+i)+5)))
-# }
-
+#  for(i in 0:3){
+#  for(j in 1:49) assign(paste0("x_",i+1),c(get(paste0("x_",i+1)), (5*(4*j+i)+1):(5*(4*j+i)+5)))
+#  }
+# 
 # list<-list(list0,list3,list4,list5)
 # table<-data.frame()
 # for(i in 1:length(list)){
