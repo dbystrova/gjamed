@@ -41,23 +41,37 @@ rl3   <- list(r = 8, N = N_eps, sigma_py=0.3, alpha=2)
 N_eps<-floor(.compute_tau_mean(0.5,10,0.1) + 2*.compute_tau_var(0.5,10,0.1))
 rl4   <- list(r = 8, N = N_eps,rate=0.1,shape=0.1,V1=5,ro.disc=0.5) #here to modify N
 
-ml4   <- list(ng = it, burnin = burn, typeNames = 'DA', reductList = rl4) #change ml
-ml3   <- list(ng = it, burnin = burn, typeNames = 'DA', reductList = rl3) #change ml
-ml2   <- list(ng = it, burnin = burn, typeNames = 'DA', reductList = rl2) #change ml
-ml1   <- list(ng = it, burnin = burn, typeNames = 'DA', reductList = rl1) #change ml
-ml   <- list(ng = it, burnin = burn, typeNames = 'DA', reductList = rl) #change ml
-
+#ml4   <- list(ng = it, burnin = burn, typeNames = 'DA', reductList = rl4) #change ml
+ml4   <- list(ng = it, burnin = burn, typeNames = 'DA', reductList = rl4, holdoutIndex = 1:100)
+#ml3   <- list(ng = it, burnin = burn, typeNames = 'DA', reductList = rl3) #change ml
+ml3   <- list(ng = it, burnin = burn, typeNames = 'DA', reductList = rl3, holdoutIndex = 1:100)
+#ml2   <- list(ng = it, burnin = burn, typeNames = 'DA', reductList = rl2) #change ml
+ml2   <- list(ng = it, burnin = burn, typeNames = 'DA', reductList = rl2, holdoutIndex = 1:100) 
+#ml1   <- list(ng = it, burnin = burn, typeNames = 'DA', reductList = rl1) #change ml
+ml1   <- list(ng = it, burnin = burn, typeNames = 'DA', reductList = rl1, holdoutIndex = 1:100) 
+#ml   <- list(ng = it, burnin = burn, typeNames = 'DA', reductList = rl) #change ml
+ml   <- list(ng = it, burnin = burn, typeNames = 'DA', reductList = rl, holdoutIndex = 1:100) 
 
 fit<-.gjam0(form, xdata = xdata, ydata = treeYdata, modelList = ml)
-save(fit,file="models_forest_data/fit.Rda")
+#save(fit,file="models_forest_data/fit.Rda")
+save(fit,file="models_forest_data_OSS/fit.Rda")
+
 fit1<-.gjam_1(form, xdata = xdata, ydata = treeYdata, modelList = ml1)
-save(fit1,file="models_forest_data/fit1.Rda")
+#save(fit1,file="models_forest_data/fit1.Rda")
+save(fit1,file="models_forest_data_OSS/fit1.Rda")
+
 fit2<-.gjam_2(form, xdata = xdata, ydata = treeYdata, modelList = ml2)
-save(fit2,file="models_forest_data/fit2.Rda")
+#save(fit2,file="models_forest_data/fit2.Rda")
+save(fit2,file="models_forest_data_OSS/fit2.Rda")
+
 fit3 <- .gjam_3(form,xdata,treeYdata,ml3)
-save(fit3,file="models_forest_data/fit3.Rda")
+#save(fit3,file="models_forest_data/fit3.Rda")
+save(fit3,file="models_forest_data_OSS/fit3.Rda")
+
 fit4<-.gjam_4(form, xdata = xdata, ydata = treeYdata, modelList = ml4)
-save(fit4,file="models_forest_data/fit4.Rda")
+#save(fit4,file="models_forest_data/fit4.Rda")
+save(fit4,file="models_forest_data_OSS/fit4.Rda")
+
 
 fit$fit$rmspeAll  #2.257202
 fit1$fit$rmspeAll #2.205223
@@ -139,16 +153,20 @@ trace3<-apply(fit3$chains$kgibbs,1,function(x) length(unique(x)))
 trace4<-apply(fit4$chains$kgibbs,1,function(x) length(unique(x)))
 
 table<-data.frame()
-table<-data.frame("trace"=c(trace0,trace1,trace2,trace3,trace4),
-                  "type"=c(rep("0",length(trace0)),rep("1",length(trace1)),rep("2",length(trace2)),rep("3",length(trace3)),rep("4",length(trace4))),
-                  "x"=rep(1:it,5))
+table<-data.frame("trace"=c(trace0,
+                            #trace1,
+                            trace2,trace3,trace4),
+                  "type"=c(rep("0",length(trace0)),
+                           #rep("1",length(trace1)),
+                           rep("2",length(trace2)),rep("3",length(trace3)),rep("4",length(trace4))),
+                  "x"=rep(1:it,4))
 
 
 gg_color_hue <- function(n) {
   hues = seq(15, 375, length = n + 1)
   hcl(h = hues, l = 65, c = 100)[1:n]
 }
-cols = gg_color_hue(5)
+cols = gg_color_hue(4)
 
 #single traceplots - not useful
 # p1<-ggplot(table[which(table$type=="0"),], aes(x=table$x[which(table$type=="0")],y=table$trace[which(table$type=="0")]))+geom_point()
@@ -162,8 +180,10 @@ cols = gg_color_hue(5)
 
 # traceplots altogether
 p<-ggplot(table, aes(x=x,y=trace,col=as.factor(type)))+geom_point()+
-  scale_color_manual(name = c(""), values = cols, labels=c("Original model","DP with prior on alpha 1","DP with prior on alpha 2","PY with fixed alpha, sigma","PY with prior on alpha, sigma"))+
-  labs(title="Traceplots of the posterior of the number of clusters")+xlab("iterations")
+  scale_color_manual(name = c(""), values = cols, labels=c("Original model",
+                                                           #"DP with prior on alpha 1",
+                                                           "DP with prior on alpha 2","PY with fixed alpha, sigma","PY with prior on alpha, sigma"))+
+  labs(title="Traceplots of the posterior of the number of clusters")+xlab("iterations")+theme_bw()
 pdf("plot_forest_data/forest_data_trace_K.pdf")
 p
 dev.off()
@@ -179,4 +199,11 @@ pk_chains3_last<- mcmc(fit3$chains$pk_g[,ncol(fit3$chains$pk_g)])
 plot(pk_chains3_last)
 pk_chains4_last<- mcmc(fit4$chains$pk_g[,ncol(fit4$chains$pk_g)])
 plot(pk_chains4_last)
+
+#Out of sample prediction
+sum((fit$prediction$ypredMu[1:100,]-treeYdata[1:100,])^2)/sum(treeYdata[1:100,]^2)
+sum((fit1$prediction$ypredMu[1:100,]-treeYdata[1:100,])^2)/sum(treeYdata[1:100,]^2)
+sum((fit2$prediction$ypredMu[1:100,]-treeYdata[1:100,])^2)/sum(treeYdata[1:100,]^2)
+sum((fit3$prediction$ypredMu[1:100,]-treeYdata[1:100,])^2)/sum(treeYdata[1:100,]^2)
+sum((fit4$prediction$ypredMu[1:100,]-treeYdata[1:100,])^2)/sum(treeYdata[1:100,]^2)
 
