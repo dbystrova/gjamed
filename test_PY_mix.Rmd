@@ -1,0 +1,148 @@
+---
+title: "R Notebook"
+output: html_notebook
+---
+
+This is an [R Markdown](http://rmarkdown.rstudio.com) Notebook. When you execute code within the notebook, the results appear beneath the code. 
+
+Try executing this chunk by clicking the *Run* button within the chunk or by placing your cursor inside it and pressing *Cmd+Shift+Enter*. 
+
+```{r}
+library(assertthat)
+library(ggplot2)
+library(tidyverse)
+library(MCMCpack)
+```
+
+
+
+```{r second }
+StickBreakingGenerator <- function(num, M, G0.generator) {
+  theta.vector <- G0.generator(n = num)
+  v.vector <- rbeta(num, 1, M)
+  w.vector <- rep(NA,num)
+  remaining <- 1
+  for (i in 1:num){
+    w.vector[i] <- remaining * v.vector[i]
+    remaining <- remaining-w.vector[i]
+  }
+  return(list(theta.vector, w.vector))
+}
+
+## Define a stick-breaking sampler
+StickBreakingSampler <- function(n, M, cutoff, num=1000, G0.generator=rnorm){
+  output <- matrix(NA, nrow = n, ncol = length(cutoff) + 1)
+  cutoff <- c(-Inf, cutoff, Inf)
+  for(i in 1:n){
+    SB.sample <- StickBreakingGenerator(num=num, M=M, G0.generator=G0.generator)
+    for(j in 1:ncol(output)){
+      output[i,j] <- sum(SB.sample[[2]][intersect(which(SB.sample[[1]] > cutoff[j]), which(SB.sample[[1]] <= cutoff[j+1]))])
+    }
+  }
+  return(output)
+}
+
+## Sample 1 vector
+M <- 1
+Prior1 <- StickBreakingSampler(n = 1, M = M, cutoff = c(-3,-2,-1,0,1,2,3))
+Prior1
+sum(Prior1)
+Prior_n <- StickBreakingSampler(n = 10^4, M = M, cutoff = c(-3,-2,-1,0,1,2,3))
+## Construct df for visualization
+df_prior <- as.data.frame(Prior_n)
+colnames(df_prior) <- paste0("G_A", seq_len(ncol(df_prior)))
+df_prior$iter <- seq_len(nrow(df_prior))
+df_prior_long <- gather(data = df_prior, key = key, value = value, -iter)
+
+## Marginal distribution of G_Ai
+ggplot(data = df_prior_long, mapping = aes(x = key, y = value)) +
+  geom_boxplot() +
+  theme_bw() + theme(legend.key = element_blank())
+
+ggplot(data = subset(df_prior_long, iter <= 5),
+       mapping = aes(x = key, y = value, group = iter, color = factor(iter))) +
+  geom_line() +
+  geom_point() +
+  theme_bw() + theme(legend.key = element_blank())
+
+
+
+# Data Generation
+set.seed(123)
+X <- c(rnorm(25,2,1), rnorm(25,-2,1))
+length(X)
+hist(X, breaks = 25)
+
+
+M <- 1
+# put an initial value of theta vector from U(-3,3)
+theta.init <- runif(50,-3,3)
+
+normalized.vector <- function(vector){
+  return(vector/sum(vector))
+}
+
+theta.update.individual <- function(X, index, theta.vector){
+  prob.in <- sum(dnorm(X[index], mean = theta.vector, sd = 1))/(sum(dnorm(X[index], mean = theta.vector, sd = 1))+M*dnorm(X[index],0,sd=sqrt(2)))
+  indicator <- rbernoulli(n = 1, prob.in)
+  if (indicator == TRUE){
+    category <- which(rmultinom(n=1,size=1,prob=normalized.vector(dnorm(X[index], mean = theta.vector, sd = 1)))==1)
+    theta.out <- theta.vector[category]
+  }else{
+    theta.out <- rnorm(n=1, mean = X[index]/2, sd = sqrt(1/2))
+  }
+  return(theta.out)
+}
+theta.update.individual(X, 1, theta.init[2:50])
+
+
+## Gibbs sampler for theta
+theta.update <- function(X, theta.previous){
+  assert_that(length(X) == length(theta.previous))
+  N <- length(X)
+  theta.temp <- c(theta.previous, rep(NA, N))  # make a length 2*N vector for dynamic updating
+  for (i in 1:N){
+    theta.temp[N+i] <- theta.update.individual(X, i, theta.temp[(i+1):(i+N-1)])
+  }
+  return(theta.temp[(N+1):(N*2)])
+}
+
+theta.update(X, theta.init)
+
+
+## Simulation
+theta.matrix <- matrix(NA, nrow = length(X), ncol = 10^5 + 10000)
+theta.matrix[,1] <- theta.init
+for (i in 2:ncol(theta.matrix)){
+    theta.matrix[,i] <- theta.update(X, theta.matrix[,i-1])
+}
+# Remove burnin (first 10%) 
+theta.final <- theta.matrix[,10001:(10^5+10000)] 
+# Perform thinin (every 10-th point)
+theta.final <- theta.final[,c(1:10000)*10]
+
+
+# Get samples of F based on posterior theta
+G0.posterior.generator <- function(n, G0=rnorm, theta.vector){
+  N <- length(theta.vector)
+  prob <- rep(1/(N+1), (N+1))
+  out <- rep(NA,n)
+  for (i in 1:n){
+    category <- which(rmultinom(n=1,size=1,prob=prob)==1)-1
+    if (category == 0){
+      out[i] <- G0(n=1)
+    }else{
+      out[i] <- theta.vector[category]
+    }
+  }
+  return(out)
+}
+
+## Sample 1 vector
+M <- 1
+Posterior1 <- StickBreakingSampler(n = 1, M = M, cutoff = c(-3,-2,-1,0,1,2,3), G0.generator=function(n){G0.posterior.generator(n,theta.vector=theta.final[,1])})
+Posterior1
+
+
+```
+

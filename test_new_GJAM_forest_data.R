@@ -104,3 +104,18 @@ alpha5<-fit5$chains$alpha.DP_g[seq(from=200,to=length(fit5$chains$alpha.DP_g),by
 alpha5<-mcmc(alpha5)
 plot(alpha5)
 
+
+
+
+
+trace<-apply(fit$chains$kgibbs,1,function(x) length(unique(x)))
+df<-as.data.frame(trace)
+df$iter<-1:1000
+#plot(apply(fit$chains$kgibbs,1,function(x) length(unique(x))))
+p<-ggplot(df, aes(y=trace, x=iter)) + geom_point() + 
+  labs(title=paste0("Trace plot for the number of groups"))+
+  theme_bw() + theme(axis.text.x = element_text(angle = 0, hjust = 1,size = 10), strip.text = element_text(size = 15),legend.position = "top", plot.title = element_text(hjust = 0.5))+
+  geom_hline(yintercept = 19,color = "red")
+p
+
+

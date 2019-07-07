@@ -1,0 +1,429 @@
+---
+title: "R Notebook"
+output: html_notebook
+---
+
+
+```{r libs, echo=FALSE}
+rm(list=ls())
+#Packages for gamma function estimation
+library(pracma)
+library(Brobdingnag)
+library(copula)
+library(plotly)
+library(distrEx)
+
+```
+
+# $V_{kn}$ functions and Prior cluster distribtion.
+
+```{r V_kn functions and Prior cluster distribtion, echo=FALSE}
+
+############### V for PY / Dir / NGG########################
+v_py<- function(kval, sigma,theta,npoints){
+  c_v<-1:(kval-1)
+  v_nk<- (theta +sigma*c_v)
+  Vup<- prod(v_nk)
+  n_vec<- 1:(npoints-1)
+  Vlow<- prod(theta +n_vec)
+  V_t_nk<-Vup/Vlow
+  return(V_t_nk)
+}
+
+############### V for NGG########################
+v_ng<- function(beta, sigma, kval, npoints){
+  sum<-0
+  coef_low<-as.brob(gamma(npoints))
+  coef_high<-as.brob(exp(beta)* sigma^(kval-1))
+  coef<- coef_high/coef_low
+  incv<- as.brob(vector(length=npoints))
+  for(i in (0:(npoints-1))){
+    gn<- as.brob(gammainc(kval - i/sigma,beta)[2])
+    #gn<- gamma_inc(kval - i/sigma,beta)
+    ckn<- as.brob(choose(npoints-1,i))
+    sum<- sum + ((-1)^i)*(beta^(i/sigma))*ckn*gn
+    incv[i+1]<- gn
+  }
+  sumf<- sum/coef
+  sumn<- as.numeric(sumf)
+  return(list(sum=sumf, incg= incv)) 
+}
+
+
+v_ng2<- function(beta, sigma, kval, npoints){
+  sum<-0
+  incv<- as.brob(vector(length=npoints))
+  for(i in (0:(npoints-1))){
+    coef_low<-as.brob(gamma(npoints))
+    coef_high<-as.brob(exp(beta)* sigma^(kval-1))
+    coef<- coef_high/coef_low
+    gn<- as.brob(gammainc(kval - i/sigma,beta)[2])
+    ckn<- as.brob(choose(npoints-1,i))
+    sum<- sum + ((-1)^i)*(beta^(i/sigma))*ckn*gn*coef
+    incv[i+1]<- gn
+  }
+  sumf<- sum
+  sumn<- as.numeric(sumf)
+  return(list(sum=sumn, incg= incv)) 
+}
+
+###############Generalized coefficient########################
+
+gen_fac_coef<-function(kval,sigma,npoints){
+  sum<-0
+  kfac<-factorial(kval)
+  for(i in (0:kval)){
+    n_vec<- 0:(npoints-1)
+    sn<- prod(-i*sigma +n_vec)
+    ckn<- choose(kval,i)
+    #print((-1)^i*ckn*sn)
+    sum<- sum + ((-1)^i)*ckn*sn 
+  }
+  sumf<- sum/kfac
+  return(sumf)
+}
+
+
+########### density for  NGG #############################
+prob_ng<- function(kg, sigma, npoints, beta){
+  pb_v_all<- v_ng2(beta, sigma, kg, npoints)
+  pb_v<-as.brob(pb_v_all$sum)
+  pb_gen<- as.brob(gen_fac_coef(kg,sigma, npoints))
+  prob<- (pb_v*pb_gen)/(as.brob(sigma^kg))
+  prob_num<- as.numeric(prob)
+  return(prob_num)
+}
+
+########### density for PY#############################
+
+prob_py<- function(kg, npoints, sigma, theta){
+  pb_v<- v_py(kg,sigma, theta,npoints)
+  pb_gen<- gen_fac_coef(kg,sigma, npoints)
+  prob<- (pb_v*pb_gen)/(sigma^kg)
+  return(prob)
+}
+
+########### density for Dirichlet#############################
+prob_dir<- function(k, npoints, theta){
+  n_vec<- 0:(npoints-1)
+  theta_n<- prod(theta +n_vec)
+  prob<- ((theta^k) *(abs(Stirling1(npoints,k))))/theta_n
+  return(prob)
+}
+
+prob_dir_large_dim<- function(k, npoints, theta){
+  n_vec<-as.brob( 0:(npoints-1))
+  theta_n<- prod(theta +n_vec)
+  stir<- as.brob(abs(Stirling1(npoints,k)))
+  powerk<- as.brob((theta^k))
+  prob_brob<- powerk*(stir/theta_n)
+  prob<- as.numeric(prob_brob)
+  return(prob)
+}
+
+#####################################################################################################################################
+#prib_ng(kg, npoints, sigma, beta)
+k_vec<-seq(1,50,by=5)
+sigma_vec<-seq(0.2,0.8, by=0.1)
+z<- outer(k_vec,sigma_vec,Vectorize(prob_ng),npoints=50, beta=1)
+
+p<- plot_ly(showscale = TRUE) %>%
+  add_surface(x=k_vec, y=sigma_vec,z =z, cmin = min(z), cmax = max(z),colorbar=list(title='PY'), colorscale = list(c(0,1),c("rgb(255,112,184)","rgb(128,0,64)")),opacity = 0.98) %>%
+  layout(title="Prior distribution", scene = list(xaxis= list(title="K"),yaxis= list(title="sigma"),zaxis= list(title="N",range = c(min(z),max(z)))))
+#p
+
+```
+
+# Data generation
+
+Gaussian mixture:
+
+$$Y \sim \frac{1}{2}N(1,0.2) +\frac{1}{2}N(5,0.2)$$
+
+```{r data generation}
+gen_data<- function(mu_vec=c(1,5,3,5), sigma_vec=rep(0.1, 4), ns=50, prob_vec=c(0.25,0.25,0.25,0.25) ){
+  l<- length(mu_vec)
+  components <- sample(1:l,prob=prob_vec,size=ns,replace=TRUE)
+  mus <- mu_vec
+  sds <- sqrt(sigma_vec)
+  samples <- rnorm(n=ns,mean=mus[components],sd=sds[components])
+  return(samples)
+}
+
+set.seed(123)
+sample<- gen_data(mu_vec=c(1,5),sigma_vec=rep(0.2, 2),ns=10000,prob_vec=c(0.5,0.5))
+hist(sample,probability=TRUE,breaks=20,col=grey(.9))
+
+
+```
+
+
+# Model 
+
+\begin{equation}
+\begin{aligned}
+(X_i \mid (\mu_i,\tau_i)) &\stackrel{iid}{\sim} N(\mu_i,\tau_i^{-1})\\
+((\mu_i, \tau_i) \mid G) &\stackrel{iid}{\sim} G \\
+G &\sim \mathcal{P} .
+\end{aligned}
+\end{equation}
+
+
+
+Firstly, assume $\tau_i=1$,then we have $X_i \sim N(\mu_i, 1)$, base measure $G_0 = N(0,1)$, $Y_i= (\mu_i)$. For sampling we use Polya Urn characterization
+
+\begin{equation}
+     p(Y_i | {Y_{-i}}) = \frac{\alpha}{\alpha+n-1} G_0 + \frac{1}{\alpha + n -1} \sum_{j=1}^{n-1} \delta_{Y_j} \qquad \forall i=1,\ldots ,n.
+\end{equation}
+
+
+
+Gibbs sampler:
+\begin{equation}
+\begin{aligned}
+G &\mid \theta, X \sim DP(\alpha +n,\frac{\alpha}{(\alpha + n)} G_0 + \frac{1}{\alpha + n)}\sum_j \delta_{\theta_j)}\\
+\theta_i &\mid \theta_{-i},X, G \sim \sum_{j\neq i}q_{ij} \delta_{\theta_j} + r_i G \\
+q_{ij} &= b N(x_,\theta_j)\\
+r_i &=  b\alpha \int f(x_i, \theta)dG_0(\theta), \text{Here: } N(x_i, \theta,1)N(\theta, 0,1)\propto N(x_i/2, 1/2).\\
+
+\end{aligned}
+\end{equation}
+
+
+#Prior
+
+```{r mixture}
+
+Gbase<- function(num, mean=0, sigma=1){
+  return( rnorm(n=1, mean, sigma))
+}
+
+
+
+PUrn_sample<-  function(n, alpha, Gbase){
+  #theta.1 sample from base measure
+   theta<- Gbase(1)
+   group_vec <- c(1)
+   for (i in 2:n){
+     #probability to sample from base measure
+     p1<- alpha/ (alpha + i-1)
+     #probability to sample from existing atoms
+     p2<- 1/ (alpha + i-1)
+     pvec<- c(p1, p2*group_vec)
+    # prob <- c(alpha/(length(count.vector)+alpha), count.vector/(length(count.vector)+M))
+    group_num<-  sample(0:length(group_vec), prob=pvec, size=1)
+
+    if (group_num == 0){
+      #add new atom
+      theta <- c(theta, Gbase(1))
+      group_vec <- c(group_vec, 1)
+    }else{
+      #update existing group for group_vec
+      group_vec[group_num] = group_vec[group_num] + 1
+    }
+  }
+  return(list(theta=theta, group= group_vec))
+}
+alpha_0<-1
+n<- 500
+x<- PUrn_sample(n, alpha_0,Gbase)
+k_groups<- x$group
+weights<- c(k_groups/(alpha_0+n), alpha_0/(alpha_0+n))
+  
+df_weights <- data.frame(matrix(NA, nrow =length(weights), ncol =1))
+df_weights$pw<-weights
+df_weights$tr<-1:length(weights)
+pl_weigths<- ggplot(df_weights, aes(x=tr, y=pw)) +
+  geom_segment( aes(x=tr,xend=tr,y=0,yend=pw)) +
+  geom_point( size=0.5, color="red", fill=alpha("blue", 0.3), alpha=0.4, shape=21, stroke=2)+  labs(title=paste0("Prior weights"))+
+  theme_bw() + theme(axis.text.x = element_text(angle = 0, hjust = 1,size = 10), strip.text = element_text(size = 15),legend.position = "top", plot.title = element_text(hjust = 0.5))
+pl_weigths
+
+
+df_weights <- data.frame(matrix(NA, nrow =length(weights), ncol =1))
+df_weights$pw<-weights
+df_weights$tr<-c(x$theta,20)
+pl_weigths<- ggplot(df_weights, aes(x=tr, y=pw)) +
+  geom_segment( aes(x=tr,xend=tr,y=0,yend=pw)) +
+  geom_point( size=0.5, color="red", fill=alpha("blue", 0.3), alpha=0.4, shape=21, stroke=2)+  labs(title=paste0("Prior weights"))+
+  theme_bw() + theme(axis.text.x = element_text(angle = 0, hjust = 1,size = 10), strip.text = element_text(size = 15),legend.position = "top", plot.title = element_text(hjust = 0.5))
+pl_weigths
+
+
+ PolyaUrnGenerator <- function(num, M, G0.generator) {
+   X.vector <- G0.generator(n = 1)
+   count.vector <- 1
+   for (i in 2:num){
+     prob <- c(M/(length(count.vector)+M), count.vector/(length(count.vector)+M))
+     category <- which(rmultinom(n=1, size=1,prob=prob)==1) - 1
+     if (category == 0){
+       X.vector <- c(X.vector, G0.generator(n = 1))
+       count.vector <- c(count.vector, 1)
+     }else{
+       count.vector[category] = count.vector[category] + 1
+     }
+   }
+   return(list(X.vector, count.vector))
+ }
+
+
+## Define a Polya Urn sampler
+PolyaUrnSampler <- function(n, M, cutoff, num = 10000, G0.generator=rnorm){
+  output <- matrix(NA, nrow = n, ncol = length(cutoff) + 1)
+  cutoff <- c(-Inf, cutoff, Inf)
+  for(i in 1:n){
+    PU.sample <- PolyaUrnGenerator(num=num, M=M, G0.generator=G0.generator)
+    for(j in 1:ncol(output)){
+      output[i,j] <- sum(PU.sample[[2]][intersect(which(PU.sample[[1]] > cutoff[j]), which(PU.sample[[1]] <= cutoff[j+1]))])/num
+    }
+  }
+  return(output)
+}
+
+## 
+x<- PolyaUrnGenerator(1,1,rnorm)
+y<- PUrn_sample(1, 1, Gbase)
+
+```
+
+
+
+
+
+```{r Gibbs theta}
+Posterior_P_Urn_exact<- function(X,theta,i,alpha){
+  q_weights<- dnorm(X[i], theta)
+  r_weight<- alpha*dnorm(X[i], mean=0, sd=sqrt(2))
+  #sum should be one
+  num_norm<- sum(q_weights)+r_weight
+  q_weights_norm<- q_weights/num_norm
+  r_weight_norm<- r_weight/num_norm
+  label <- sample(0:length(theta),prob=c(r_weight_norm,q_weights_norm),size=1,replace=TRUE)
+  if (label==0){
+    theta_new<- rnorm(1, mean=X[i], sd=sqrt(1/2))
+  }
+  else{
+    theta_new <- theta[label]
+  }
+}
+
+
+sample<- gen_data(mu_vec=c(1,5),sigma_vec=rep(0.2, 2),ns=50,prob_vec=c(0.5,0.5))
+X<- sample
+theta.matrix <- matrix(NA, nrow = 10000, ncol = length(X))
+alpha<-1
+#weights.matrix <- matrix(NA, nrow = 100, ncol = length(X)+1)
+theta.init<- runif(length(X),-3,3)
+theta.matrix[1,] <- theta.init
+for (i in 2:nrow(theta.matrix)){
+    theta_last<- theta.matrix[i-1,]
+    N <- length(X)
+    temp_theta <- c(theta_last, rep(NA, N)) 
+    for (j in 1:N){
+      temp_theta[N+j] <- Posterior_P_Urn_exact(X, temp_theta[(j+1):(j+N-1)],j,alpha)
+    }
+    theta_S<- temp_theta[(N+1):(N*2)]
+    theta.matrix[i,] <-theta_S
+}
+
+#burnin period
+theta.final <- theta.matrix[5000:10000,] 
+ 
+xgrid <- seq(from= 0, to=10,length=50)
+fgrid <- NULL
+
+fbar.H <- function(xgrid,wh)
+{ ## return a draw F ~ p(F | ...) (approx)
+  
+  fx <- rep(0,length(xgrid))
+  for(h in 1:length(wh))
+    fx <- fx + dnorm(xgrid,m=wh[h],sd=1)
+  fx<- fx +  M/(n+M)*dnorm(xgrid,m=m0,sd=sqrt(B0+sig))
+  return(fx/length(wh))
+}
+
+
+fbar.H_base <- function(xgrid,wh)
+{ ## return a draw F ~ p(F | ...) (approx)
+  
+  fx <- rep(0,length(xgrid))
+  fb <- rep(0,length(xgrid))
+  for(h in 1:length(wh)){
+    fx <- fx + dnorm(xgrid,m=wh[h],sd=1) 
+  }
+  fx_m<- fx/ (length(wh)+ alpha)
+  fx_m<- fx_m +  alpha/(length(wh)+alpha)*dnorm(xgrid,m=0,sd=sqrt(2))
+  return(fx_m)
+}
+
+
+
+ecfbar.H_base <- function(xgrid,wh)
+{ ## return a draw F ~ p(F | ...) (approx)
+  
+  fx <- rep(0,length(xgrid))
+  for(h in 1:length(wh)){
+    fx <- fx + pnorm(xgrid,m=wh[h],sd=1) 
+  }
+  fx_m<- fx/ (length(wh)+ alpha)
+  fx_m<- fx_m +  alpha/(length(wh)+alpha)*pnorm(xgrid,m=0,sd=sqrt(2))
+  return(fx_m)
+}
+
+
+gibbs.H <- function(n.iter=10000){
+  xgrid <- seq(from= 0, to=10,length=50)
+  cgrid<- seq(from= 0, to=10,length=50)
+  fgrid <- NULL
+  ecfgrid <- NULL
+  plot(density(X),xlab="X",ylab="Y",bty="l",type="l",xlim=c(0, 10),ylim=c(0,1), main="")
+  for(iter in floor(nrow(theta.matrix)/2):nrow(theta.matrix)){
+      ## record draw F ~ p(F | th,sig,y) (approx)
+      f   <- fbar.H_base(xgrid,theta.matrix[iter,])
+    #  ecf<- ecfbar.H_base(cgrid,theta.matrix[iter,])
+      lines(xgrid,f,col=iter,lty=3)
+      fgrid <- rbind(fgrid,f)
+    #  ecfgrid <- rbind(ecfgrid,ecf)
+    }
+    ## add overall average (= posterior mean) to the plot
+    fbar <- apply(fgrid,2,mean)
+    lines(xgrid,fbar,lwd=3,col=2)
+    plot(ecdf(X),xlab="X",ylab="Y",bty="l", main="")
+  for(iter in floor(nrow(theta.matrix)/2):nrow(theta.matrix)){
+      ## record draw F ~ p(F | th,sig,y) (approx)
+      ecf<- ecfbar.H_base(cgrid,theta.matrix[iter,])
+      lines(cgrid,ecf,col=iter,lty=3)
+      ecfgrid <- rbind(ecfgrid,ecf)
+    }
+    ## add overall average (= posterior mean) to the plot
+    fbar <- apply(fgrid,2,mean)
+    ecfbar<- apply(ecfgrid,2,mean)
+    lines(cgrid,ecfbar,lwd=3,col=2)
+    
+    return(list(f_ap=fbar, ecf=ecfbar))
+}
+
+
+f_approx<- gibbs.H()
+ks.test(f_approx$ecf,ecdf(X))
+
+
+plot(ecdf(X))
+lines(f_approx$ecf)
+```
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
