@@ -1,4 +1,11 @@
 library(distrEx)
+library(data.table)
+
+library(dplyr)
+
+library(formattable)
+
+library(tidyr)
 
 gen_data<- function(mu_vec=c(1,5,3,5), sigma_vec=rep(0.1, 4), ns=50, prob_vec=c(0.25,0.25,0.25,0.25) ){
   l<- length(mu_vec)
@@ -22,6 +29,7 @@ n <- length(y)
 a  <- 1;   b <- 1    # 1/sig ~ Ga(a,b)
 m0 <- 0;  B0 <- 4   # G0 = N(m0,B0)
 M  <- 1
+
 
 
 init.DPk <- function()
@@ -201,13 +209,4 @@ gibbs <- function(n.iter=500)
 
 
 gibbs()
-
-
-names(mcmc)
-## report summaries
-njbar <- apply(mcmc$njlist,2,mean,na.rm=T)
-cat("Average cluster sizes:\n",format(njbar,digits=1),"\n")
-pk <- table(mcmc$klist)/length(mcmc$klist)
-cat("Posterior probs p(k): (row1 = k, row2 = p(k) \n ")
-print(pk/sum(pk))
 
