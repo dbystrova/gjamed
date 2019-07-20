@@ -44,7 +44,7 @@ env.files = list.files(path = paste0(zone.name, "/", zone.env.folder)
                        , pattern = paste0(paste0(zone.env.variables, ".img", collapse = "|"), "|", paste0(zone.env.variables, ".tif", collapse = "|")), full.names = TRUE)
 
 
-
+##function from the package
 getSDM_env = function(zone.name, zone.env.folder, zone.env.variables, maskSimul)
 {
   env.files = list.files(path = paste0(zone.name, "/", zone.env.folder)
@@ -72,68 +72,64 @@ B_env$cite<- rownames(B_coords_xy)
 
 
 ### merge environmental covariates and presence/abscence data by cite.
-
 PA_env_df <- merge(B_env,PA_data_df,by="cite")
-
-## delete cites with NA/0  for environment
-
+## delete cites with NA for environment
 NAs_values<- is.na(PA_env_df$bio_1_0)&is.na(PA_env_df$bio_12_0)&is.na(PA_env_df$bio_19_0)&is.na(PA_env_df$bio_8_0)&is.na(PA_env_df$slope)
-
 PA_env_df_1<- PA_env_df[!NAs_values,]
+###  delete total 0 for environment
 zeros_values<- (PA_env_df_1$bio_1_0==0)&(PA_env_df_1$bio_12_0==0)&(PA_env_df_1$bio_19_0==0)&(PA_env_df_1$bio_8_0==0)&(PA_env_df_1$slope==0)
 PA_env_df_2<- PA_env_df_1[!zeros_values,]
 
+## non missing data sets
+#PA_non_miss_env<- PA_env_df_2[!apply(is.na(PA_env_df_2[,7:131]),1,any),]
+#PA_non_na_env<- PA_env_df_2[!apply(is.na(PA_env_df_2[,7:131]),1,all),]
 
-PA_non_miss_env<- PA_env_df_2[!apply(is.na(PA_env_df_2[,7:131]),1,any),]
-PA_non_na_env<- PA_env_df_2[!apply(is.na(PA_env_df_2[,7:131]),1,all),]
+#### Keeping PA data with at least one 1/0
 PA_env_df_3<- PA_env_df_2[which(!(rowSums(is.na(PA_env_df_2[,7:131]))==125)),]
 
 
-
-
-smp_size <- floor(0.50 * nrow(PA_env_df_3))
+####Separation test/train
+smp_size <- floor(0.70 * nrow(PA_env_df_3))
 ## set the seed to make your partition reproducible
 set.seed(123)
 train_ind <- sample(seq_len(nrow(PA_env_df_3)), size = smp_size)
 
 train <- PA_env_df_3[train_ind, ]
 test <- PA_env_df_3[-train_ind, ]
-
+## dim(train)  / 3712  131
+## dim(test)  /  1591  131
 ########################################################################Group numbers
 Species_names_groups<- read.csv("PFG_Bauges_Description_2017.csv", sep="\t")
-
+# K=16 functional groups
 #############################################################################Fitting the model 
 
-
+it<-1000
+burn<-500
+holdout<- sample(seq_len(nrow(train)), size = 200)
 
 ###########GJAM standart model
 y<- train[,7:131]
 xdata<- train[,2:6]
 formula <- as.formula( ~ bio_1_0 + bio_12_0 + bio_19_0 +bio_8_0 +slope )
-
-Ydata  <- gjamTrimY(y,10)$y             # at least 10 plots
-
+Ydata  <- gjamTrimY(y,10)$y             # at least 10 plots - re-group rare species
 rl <- list(r = 5, N = 50)
-
-
 ml   <- list(ng = 1000, burnin = 100, typeNames = 'PA', reductList = rl) #change ml
-
 fit<-gjam(formula, xdata = xdata, ydata = Ydata, modelList = ml)
+save(fit,file="models_Bagues_data_OSS/fit.Rda")
+#no Holdout
+#save(fit,file="models_forest_data_OSS/fit.Rda")
 
 
-
+####### Out of sample prediction  -DOESN't work : chol() error ??
 y_test<- test[,7:131]
-xdata_test<- test[1:100,2:6]
+xdata_test<- test[,2:6]
 
 new <- list(xdata =xdata_test,  nsim = 1000) # effort unchanged 
 p1  <- gjamPredict(output = fit, newdata = new)
-
 plot(y_test, p1$sdList$yMu ,ylab = 'Predicted',cex=.1)
 abline(0,1)
 
-
-
-
+############################################
 ####Check the trace for number of groups. From the previous analysis we know that the number of functional groups is 16
 
 trace<-apply(fit$chains$kgibbs,1,function(x) length(unique(x)))
@@ -146,15 +142,21 @@ p<-ggplot(df, aes(y=trace, x=iter)) + geom_point() +
   geom_hline(yintercept = 16,color = "red")
 p
 
-####The Dirichlet process prior with conjugation
+####The Dirichlet process prior with conjugation############################################
+
+
+##We don't need this model
 rl1 <- list(r = 5, N = 50,rate=10,shape=10)
-fit1<-.gjam_1(form, xdata = xdata, ydata = Ydata, modelList = ml1)
+fit1<-.gjam_1(form, xdata = xdata, ydata = Ydata, modelList = ml1, holdoutIndex =holdout)
+
+
+
 
 
 ####The Dirichlet process prior : multinomial  + prior on alpha
 ##Computing the hyper-parameters for K=16
 K=16
-S=118
+S=125
 func<-function(x) {sum(x/(x+(1:S)-1))-16}
 alpha.DP<-.bisec(func,0.01,100)
 shape=((alpha.DP)^2)/20
@@ -165,10 +167,7 @@ rl2  <- list(r = 5, N = 50,rate=rate,shape=shape,V=1) #here to modify N
 ml2   <- list(ng = 1000, burnin = 500, typeNames = 'PA', reductList = rl2) #change ml
 
 fit2<-.gjam_2(formula, xdata = xdata, ydata = Ydata, modelList = ml2)
-
-
-
-
+save(fit2,file="models_Bagues_data_OSS/fit2.Rda")
 
 
 trace<-apply(fit2$chains$kgibbs,1,function(x) length(unique(x)))
@@ -180,6 +179,63 @@ p<-ggplot(df, aes(y=trace, x=iter)) + geom_point() +
   theme_bw() + theme(axis.text.x = element_text(angle = 0, hjust = 1,size = 10), strip.text = element_text(size = 15),legend.position = "top", plot.title = element_text(hjust = 0.5))+
   geom_hline(yintercept = 16,color = "red")
 p
+
+#################################################################################PY
+K=16
+eps<-0.1
+sigma_py<-0.25
+funcPY_root<-function(x) {(x/sigma_py)*(prod((x+sigma_py+c(1:S) -1)/(x+c(1:S) -1))-1) - K}
+alpha.PY<-.bisec(funcPY_root,0.0001,100)
+N_eps<-floor(.compute_tau_mean_large_dim(sigma_py,alpha.PY,eps) + 2*.compute_tau_var_large_dim(sigma_py,alpha.PY,eps))
+rl3   <- list(r = r, N = N_eps, sigma_py=sigma_py, alpha=alpha.PY)
+ml3   <- list(ng = it, burnin = burn, typeNames = 'PA', reductList = rl3)
+
+
+fit3 <- .gjam_3(form,xdata,Ydata,ml3)
+save(fit3,file="models_Bagues_data_OSS/fit3.Rda")
+
+
+
+
+
+K<-16
+eps=0.1
+alp_sig<-as.data.frame(matrix(NA,nrow=20,ncol=3))
+colnames(alp_sig)<-c("alpha","sigma","is_less_150")
+alp_sig$sigma=seq(0.05,0.4,length.out = 20)
+#loop to run bisecetion on a grid for sigma
+for(i in 1:20){
+  ####corrected added  -1
+  func<-function(x) {(x/alp_sig[i,"sigma"])*(prod((x+alp_sig[i,"sigma"]+c(1:S)-1)/(x+c(1:S) -1))-1) - K}
+  alp_sig[i,"alpha"]<-.bisec(func,0.01,100)
+  N_eps<-floor(.compute_tau_mean_large_dim(alp_sig[i,"sigma"], alp_sig[i,"alpha"],eps) + 2*.compute_tau_var_large_dim(alp_sig[i,"sigma"], alp_sig[i,"alpha"],eps))
+  ifelse(N_eps<=150,alp_sig[i,"is_less_150"]<-T,alp_sig[i,"is_less_150"]<-F)
+  N_eps
+}
+
+if(sum(alp_sig$is_less_150==T)==0) cat("!! no choice under N=150, need to recheck!!!")
+
+k<-max(which(alp_sig$is_less_150==T)) #max sigma s.t. N<150
+sigma_py<-alp_sig[k,"sigma"]
+alpha.PY<-alp_sig[k,"alpha"]
+#fixing hyperparameters
+ro.disc=1-2* sigma_py
+shape=((alpha.PY)^2)/10
+rate=alpha.PY/10
+# 95% quantile of alpha
+alpha.max=qgamma(.95, shape=shape, rate=rate)
+alpha.max_val<-5
+sigma_py_max<-0.5
+N_eps<-floor(.compute_tau_mean_large_dim(sigma_py_max,alpha.max_val,eps) + 2*.compute_tau_var_large_dim(sigma_py_max,alpha.max_val,eps))
+
+rl4   <- list(r = 8, N = N_eps,rate=rate,shape=shape,V1=1,ro.disc=ro.disc) #here to modify N
+
+fit4<-.gjam_4(form, xdata = xdata, ydata = Ydata, modelList = ml4)
+save(fit4,file="models_Bagues_data_OSS/fit4.Rda")
+
+
+
+
 
 
 
@@ -214,6 +270,7 @@ fit4<-.gjam_4(form, xdata = xdata, ydata = treeYdata, modelList = ml4)
 
 
 
+#################################################################################Other models - BIOMOD
 
 
 ## Not run:
