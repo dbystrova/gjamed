@@ -36,6 +36,11 @@ PA_data<-load_object("DOM.mat.sites.species.PA.RData")
 PA_data_df<- as.data.frame(PA_data)
 PA_data_df$cite<- rownames(PA_data)
 
+spdf <- SpatialPoints(B_coords_xy,proj4string = CRS("+proj=lcc +lat_1=49 +lat_2=44 +lat_0=46.5 +lon_0=3 +x_0=700000 +y_0=6600000 +ellps=GRS80
+                                                    +towgs84=0,0,0,0,0,0,0 +units=m +no_defs"))
+
+
+
 #raster stack for the 100.tif 
 zone.name="ENV_VARIABLES"
 zone.env.folder="EOBS_1970_2005"
@@ -86,7 +91,7 @@ PA_env_df_2<- PA_env_df_1[!zeros_values,]
 
 #### Keeping PA data with at least one 1/0
 PA_env_df_3<- PA_env_df_2[which(!(rowSums(is.na(PA_env_df_2[,7:131]))==125)),]
-
+PA_env_df_3<-PA_env_df_3[,]
 
 ####Separation test/train
 smp_size <- floor(0.70 * nrow(PA_env_df_3))
@@ -98,6 +103,8 @@ train <- PA_env_df_3[train_ind, ]
 test <- PA_env_df_3[-train_ind, ]
 ## dim(train)  / 3712  131
 ## dim(test)  /  1591  131
+
+
 ########################################################################Group numbers
 Species_names_groups<- read.csv("PFG_Bauges_Description_2017.csv", sep="\t")
 # K=16 functional groups
@@ -113,7 +120,7 @@ xdata<- train[,2:6]
 formula <- as.formula( ~ bio_1_0 + bio_12_0 + bio_19_0 +bio_8_0 +slope )
 Ydata  <- gjamTrimY(y,10)$y             # at least 10 plots - re-group rare species
 rl <- list(r = 5, N = 50)
-ml   <- list(ng = 1000, burnin = 100, typeNames = 'PA', reductList = rl) #change ml
+ml   <- list(ng = 1000, burnin = 100, typeNames = 'PA', reductList = rl, holdout=holdout) #change ml
 fit<-gjam(formula, xdata = xdata, ydata = Ydata, modelList = ml)
 save(fit,file="models_Bagues_data_OSS/fit.Rda")
 #no Holdout
