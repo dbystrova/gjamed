@@ -36,11 +36,6 @@ PA_data<-load_object("DOM.mat.sites.species.PA.RData")
 PA_data_df<- as.data.frame(PA_data)
 PA_data_df$cite<- rownames(PA_data)
 
-spdf <- SpatialPoints(B_coords_xy,proj4string = CRS("+proj=lcc +lat_1=49 +lat_2=44 +lat_0=46.5 +lon_0=3 +x_0=700000 +y_0=6600000 +ellps=GRS80
-                                                    +towgs84=0,0,0,0,0,0,0 +units=m +no_defs"))
-
-
-
 #raster stack for the 100.tif 
 zone.name="ENV_VARIABLES"
 zone.env.folder="EOBS_1970_2005"
@@ -92,17 +87,11 @@ PA_env_df_2<- PA_env_df_1[!zeros_values,]
 #### Keeping PA data with at least one 1/0
 PA_env_df_3<- PA_env_df_2[which(!(rowSums(is.na(PA_env_df_2[,7:131]))==125)),]
 
-###Convert from NA to 0
+PA_non_miss_env<- PA_env_df_2[!apply(is.na(PA_env_df_2[,7:131]),1,any),]
 
-PA_env_df_2_fil_o_y<- PA_env_df_3[,7:131]
-PA_env_df_2_fil_o_x<- PA_env_df_3[,1:6]
-PA_env_df_2_fil_o_y[is.na(PA_env_df_2_fil_o_y)] <- 0
-PA_env_df_2_0<- cbind(PA_env_df_2_fil_o_x,PA_env_df_2_fil_o_y)
-#PA_env_df_2_0<-apply(PA_env_df_2[,7:131],1,function(x) x[is.na(x)] <- 0 )
-#PA_env_df_2_00<- data.frame(PA_env_df_2[,1:6], apply(PA_env_df_2[,7:131],1, ) )
 ####Separation test/train
 #data<- PA_env_df_3
-data<- PA_env_df_2_0
+data<- PA_non_miss_env
 smp_size <- floor(0.70 * nrow(data))
 ## set the seed to make your partition reproducible
 set.seed(123)
@@ -112,8 +101,6 @@ train <- data[train_ind, ]
 test <- data[-train_ind, ]
 ## dim(train)  / 3712  131
 ## dim(test)  /  1591  131
-
-
 ########################################################################Group numbers
 Species_names_groups<- read.csv("PFG_Bauges_Description_2017.csv", sep="\t")
 # K=16 functional groups
@@ -123,48 +110,23 @@ it<-1000
 burn<-500
 holdout<- sample(seq_len(nrow(train)), size = 100)
 
-
-###################PCA
-xdata_init<- train[,2:6]
-#
-
-##Normalization
-scaled.data <- as.data.frame(scale(xdata_init))
-
-
-###PCA 
-xnew<- prcomp(scaled.data)
-xdata_pca<- as.data.frame(xnew$x[,1:3])
-
-##########GJAM standart model
+###########GJAM standart model
 y<- train[,7:131]
-#xdata<- train[,2:6]
-#xdata<- scaled.data
-xdata<- xdata_pca
-
-formula <- as.formula( ~ PC1 +  PC2 + PC3 )
-#formula <- as.formula( ~   bio_1_0 +  bio_8_0 + I(bio_8_0^2) + I(bio_1_0^2))
-Ydata  <- gjamTrimY(y,10)$y             # at least 10 plots - re-group rare species
+xdata<- train[,2:6]
+formula <- as.formula( ~ bio_1_0+ bio_19_0+bio_8_0+ slope)
+Ydata  <- gjamTrimY(y,50)$y             # at least 10 plots - re-group rare species
 S<- ncol(Ydata)
-rl <- list(r = 3, N = 50)
-ml   <- list(ng = 500, burnin = 10, typeNames = 'PA', reductList = rl) #change ml
+rl <- list(r = 5, N = 50)
+ml   <- list(ng = 100, burnin = 10, typeNames = 'PA', reductList = rl) #change ml
 fit<-gjam(formula, xdata = xdata, ydata = Ydata, modelList = ml)
-
-
-###Check the rank of X, should be number of columns
-x <- model.matrix(formula, xdata)
-qr(x)$rank
-
 #save(fit,file="models_Bagues_data_OSS/fit.Rda")
 #no Holdout
 #save(fit,file="models_forest_data_OSS/fit.Rda")
 
 
 ####### Out of sample prediction  -DOESN't work : chol() error ??
-#y_test<- test[,7:131]
-#xdata_test<- test[,2:6]
+y_test<- test[,7:131]
 xdata_test<- test[,2:6]
-
 
 new <- list(xdata =xdata_test,  nsim = 1000) # effort unchanged 
 p1  <- gjamPredict(output = fit, newdata = new)

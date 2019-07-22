@@ -69,6 +69,10 @@ getSDM_env = function(zone.name, zone.env.folder, zone.env.variables, maskSimul)
               , env.PROJ = zone.env.stk.PROJ))
 }
 
+new_B_env<-getSDM_env() 
+
+
+m<- extract(B_ENV_proj, B_XY)
 
 
 

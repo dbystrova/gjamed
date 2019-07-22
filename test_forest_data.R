@@ -28,7 +28,7 @@ y  <- gjamReZero(forestTraits$treesDeZero)  # extract y
 treeYdata  <- gjamTrimY(y,10)$y             # at least 10 plots
 form <- as.formula( ~ temp*deficit + I(temp^2) + I(deficit^2) )
 S<-ncol(treeYdata) #95
-it<-5000
+it<-1000
 burn<-500
 rl <- list(r = 8, N = S,alpha.DP=S)
 rl1 <- list(r = 8, N = S, rate=0.1,shape=0.1)
@@ -85,6 +85,7 @@ fit1$fit$DIC  #2496028
 fit2$fit$DIC  #2505273
 fit3$fit$DIC  #2496243
 fit4$fit$DIC  #2460125
+
 
 
 #check that alpha and sigma posteriors
@@ -185,9 +186,9 @@ p<-ggplot(table, aes(x=x,y=trace,col=as.factor(type)))+geom_point()+
                                                            #"DP with prior on alpha 1",
                                                            "DP with prior on alpha 2","PY with fixed alpha, sigma","PY with prior on alpha, sigma"))+
   labs(title="Traceplots of the posterior of the number of clusters")+xlab("iterations")+theme_bw()
-pdf("plot_forest_data/forest_data_trace_K.pdf")
+#pdf("plot_forest_data/forest_data_trace_K.pdf")
 p
-dev.off()
+#dev.off()
 
 #check the last weight
 pk_chains0_last<- mcmc(fit$chains$pk_g[,ncol(fit$chains$pk_g)])
