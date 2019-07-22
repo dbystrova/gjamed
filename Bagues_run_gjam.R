@@ -138,12 +138,12 @@ xdata_pca<- as.data.frame(xnew$x[,1:3])
 
 ##########GJAM standart model
 y<- train[,7:131]
-#xdata<- train[,2:6]
+xdata<- train[,2:6]
 #xdata<- scaled.data
-xdata<- xdata_pca
+#xdata<- xdata_pca
 
-formula <- as.formula( ~ PC1 +  PC2 + PC3 )
-#formula <- as.formula( ~   bio_1_0 +  bio_8_0 + I(bio_8_0^2) + I(bio_1_0^2))
+#formula <- as.formula( ~ PC1 +  PC2 + PC3 )
+formula <- as.formula( ~   bio_1_0 +  bio_8_0 + I(bio_8_0^2) + I(bio_1_0^2))
 Ydata  <- gjamTrimY(y,10)$y             # at least 10 plots - re-group rare species
 S<- ncol(Ydata)
 rl <- list(r = 3, N = 50)
