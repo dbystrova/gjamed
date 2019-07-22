@@ -3,7 +3,7 @@
 
 f   <- gjamSimData(S=120, Q=10, typeNames = 'PA')
 rl <- list(r = 8, N = 50)
-ml  <- list(ng = 200, burnin = 50, typeNames = 'PA', reductList = rl)
+ml  <- list(ng = 200, burnin = 50, typeNames = 'PA', reductList = rl, holdoutIndex=1:100)
 out <- gjam(f$formula, f$xdata, f$ydata, modelList = ml)
 
 xdata_test<- f$xdata[1:20,]

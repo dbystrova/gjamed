@@ -33,6 +33,8 @@ B_coords_xy<- load_object("DB.XY.RData")
 
 #load abundance data
 PA_data<-load_object("DOM.mat.sites.species.PA.RData")
+AB_data<-load_object("DOM.mat.sites.species.abund.RData")
+
 PA_data_df<- as.data.frame(PA_data)
 PA_data_df$cite<- rownames(PA_data)
 
@@ -93,7 +95,6 @@ PA_env_df_2<- PA_env_df_1[!zeros_values,]
 PA_env_df_3<- PA_env_df_2[which(!(rowSums(is.na(PA_env_df_2[,7:131]))==125)),]
 
 ###Convert from NA to 0
-
 PA_env_df_2_fil_o_y<- PA_env_df_3[,7:131]
 PA_env_df_2_fil_o_x<- PA_env_df_3[,1:6]
 PA_env_df_2_fil_o_y[is.na(PA_env_df_2_fil_o_y)] <- 0
@@ -146,8 +147,8 @@ xdata<- train[,2:6]
 formula <- as.formula( ~   bio_1_0 +  bio_8_0 + I(bio_8_0^2) + I(bio_1_0^2))
 Ydata  <- gjamTrimY(y,10)$y             # at least 10 plots - re-group rare species
 S<- ncol(Ydata)
-rl <- list(r = 3, N = 50)
-ml   <- list(ng = 500, burnin = 10, typeNames = 'PA', reductList = rl) #change ml
+rl <- list(r =5, N = S)
+ml   <- list(ng = 1000, burnin = 100, typeNames = 'PA', reductList = rl) #change ml
 fit<-gjam(formula, xdata = xdata, ydata = Ydata, modelList = ml)
 
 
