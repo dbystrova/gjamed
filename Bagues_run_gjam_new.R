@@ -12,6 +12,7 @@ library(ggplot2)
 library(rgdal)
 library(biomod2)
 library(AUC)
+library(formattable)
 Rcpp::sourceCpp('src/cppFns.cpp')
 source("R/gjamHfunctions_mod.R")
 source("R/simple_gjam_1.R")
@@ -193,12 +194,15 @@ Species_names_groups<- read.csv("PFG_Bauges_Description_2017.csv", sep="\t")
 #############################################################################Fitting the model 
 
 data<- AB_norm_PA
+
 set.seed(123)
 smp_size <- floor(0.90 * nrow(data))
 train_ind <- sample(seq_len(nrow(data)), size = smp_size)
 
 train <- data[train_ind, ]
 test <- data[-train_ind, ]
+save(train, file = "sample_data_train2.Rds")
+save(test, file = "sample_data_test2.Rds")
 
 
 
@@ -223,13 +227,16 @@ eigs[1] / sum(eigs) +eigs[2] / sum(eigs)
 
 ##########GJAM standart model
 y<- train[,7:130]
-xdata<- xdata_pca[train_ind,]
+#xdata<- xdata_pca[train_ind,]
+xdata<- train[,2:6]
+
 #xdata<- scaled.data
 #xdata<- xdata_pca
+#save(xdata, file = "sample_data_train_pca.Rds")
 
-formula <- as.formula( ~ PC1 +  PC2 + I(PC1^2)+  I(PC2^2))
+#formula <- as.formula( ~ PC1 +  PC2 + I(PC1^2)+  I(PC2^2))
 #temp*deficit + I(temp^2) + I(deficit^2) 
-#formula <- as.formula( ~   bio_1_0*bio_8_0 + I(bio_1_0^2) + I(bio_8_0^2) )
+formula <- as.formula( ~   bio_12_0  + slope + I(bio_12_0^2) + I(slope^2) )
 Ydata  <- gjamTrimY(y,10)$y             # at least 10 plots - re-group rare species
 S<- ncol(Ydata)
 rl <- list(r =5, N = S)
@@ -242,21 +249,20 @@ x <- model.matrix(formula, xdata)
 qr(x)$rank
 
 #save(fit,file="models_Bagues_data_OSS/fit.Rda")
+#save(fit,file="models_Bagues_data_OSS/fit_2.Rda")
 #no Holdout
-#save(fit,file="models_forest_data_OSS/fit.Rda")
 
-
+#fit<- load_object("models_Bagues_data_OSS/fit.Rda")
 ####### Out of sample prediction  -DOESN't work : chol() error ??
 Ykeep<- as.vector(colnames(Ydata))
 y_test<- test[,c(Ykeep[1:(ncol(Ydata)-1)])]
 #xdata_test<- test[,2:6]
-xdata_test<- xdata_pca[-train_ind,]
+xdata_test<- test[,2:6]
+#save(xdata_test, file = "sample_data_test_pca.Rds")
 
 
-new <- list(xdata =xdata_test,  nsim = 100) # effort unchanged 
+new <- list(xdata =xdata_test,  nsim = 1000) # effort unchanged 
 p1  <- gjamPredict(output = fit, newdata = new)
-plot(y_test[,2], p1$sdList$yMu[,2])
-abline(0,1)
 
 AUC_GJAM<-vector()
 for(i in 1:ncol(y_test)){ 
@@ -321,11 +327,11 @@ rl2  <- list(r = 5, N = S,rate=rate,shape=shape,V=1) #here to modify N
 ml2   <- list(ng = 1000, burnin = 500, typeNames = 'PA', reductList = rl2,PREDICTX = F) #change ml
 
 fit2<-.gjam_2(formula, xdata = xdata, ydata = Ydata, modelList = ml2)
-#save(fit2,file="models_Bagues_data_OSS/fit2.Rda")
+#save(fit2,file="models_Bagues_data_OSS/fit2_2.Rda")
+#fit2<- load_object("models_Bagues_data_OSS/fit2.Rda")
 
 
-
-new <- list(xdata =xdata_test,  nsim = 100) # effort unchanged 
+new <- list(xdata =xdata_test,  nsim = 1000) # effort unchanged 
 p2  <- gjamPredict(output = fit2, newdata = new)
 
 AUC_GJAM2<-vector()
@@ -379,12 +385,14 @@ fit3 <- .gjam_3(formula,xdata,Ydata,ml3)
 
 
 #save(fit3,file="models_Bagues_data_OSS/fit3.Rda")
+#save(fit3,file="models_Bagues_data_OSS/fit3_2.Rda")
+
+#fit3<- load_object("models_Bagues_data_OSS/fit3.Rda")
 
 
 
 
-
-new <- list(xdata =xdata_test,  nsim = 100) # effort unchanged 
+new <- list(xdata =xdata_test,  nsim = 1000) # effort unchanged 
 p3  <- gjamPredict(output = fit3, newdata = new)
 
 AUC_PY1<-vector()
@@ -412,6 +420,16 @@ for(k in 1:ncol(y_test)){
 }
 
 mean(na.omit(Tjur_PY1))
+
+
+k_mat_200<- as.data.frame(K_dmat)
+k_mat_200$n<- 200
+names(k_mat_200)<- c("alpha","sigma","PY","PY_A1","NG_A2","N")
+
+
+write.csv(k_mat_200, file = "K_200.csv")
+formattable(k_mat_200)
+
 
 
 ############################################
@@ -478,12 +496,13 @@ rl4   <- list(r = 5, N =N_eps,rate=rate,shape=shape,V1=1,ro.disc=ro.disc) #here 
 ml4   <- list(ng = it, burnin = burn, typeNames = 'PA', reductList = rl4,PREDICTX = F)
 
 fit4<-.gjam_4(formula, xdata = xdata, ydata = Ydata, modelList = ml4)
+#fit4<- load_object("models_Bagues_data_OSS/fit4.Rda")
 
 
-#save(fit4,file="models_Bagues_data_OSS/fit4.Rda")
+#save(fit4,file="models_Bagues_data_OSS/fit4_2.Rda")
 
 
-new <- list(xdata =xdata_test,  nsim = 100) # effort unchanged 
+new <- list(xdata =xdata_test,  nsim = 1000) # effort unchanged 
 p4  <- gjamPredict(output = fit4, newdata = new)
 
 AUC_PY2<-vector()
@@ -546,49 +565,88 @@ fit2$fit$DIC  #2505273
 fit3$fit$DIC  #2496243
 fit4$fit$DIC  #2460125
 
+AUC_data<- matrix(NA, nrow =length(AUC_GJAM), ncol =4)
+AUC_data[,1]<- AUC_GJAM
+AUC_data[,2]<- AUC_GJAM2
+AUC_data[,3]<- AUC_PY1
+AUC_data[,4]<- AUC_PY2
+AUC_data_df<- as.data.frame(AUC_data)
+names(AUC_data_df)<- c("GJAM","GJAM2","PY1","PY2")
+AUC_fin<- melt(AUC_data_df)
+
+p2<-ggplot(data=AUC_fin)+geom_boxplot(aes(y=as.numeric(value),x=as.factor(variable),fill=as.factor(variable)))+
+  scale_y_continuous(name="AUC")+
+  scale_fill_discrete(name = "Models", labels = c("GJAM","GJAM2","PY1","PY2"))+theme_bw() + theme_bw()
+p2
+
+AUC_fin_table<- apply(AUC_fin,1,mean)
+formattable(AUC_fin_table)
+
+
+
+table<-data.frame()
+table<-data.frame("trace"=c(trace0,
+                            #trace1,
+                            trace2,trace3,trace4),
+                  "type"=c(rep("0",length(trace0)),
+                           #rep("1",length(trace1)),
+                           rep("2",length(trace2)),rep("3",length(trace3)),rep("4",length(trace4))),
+                  "x"=rep(1:it,4))
+
+
+gg_color_hue <- function(n) {
+  hues = seq(15, 375, length = n + 1)
+  hcl(h = hues, l = 65, c = 100)[1:n]
+}
+cols = gg_color_hue(4)
+
+#single traceplots - not useful
+# p1<-ggplot(table[which(table$type=="0"),], aes(x=table$x[which(table$type=="0")],y=table$trace[which(table$type=="0")]))+geom_point()
+# p1
+# p2<-ggplot(table[which(table$type=="1"),], aes(x=table$x[which(table$type=="1")],y=table$trace[which(table$type=="1")]))+geom_point()
+# p2
+# p3<-ggplot(table[which(table$type=="2"),], aes(x=table$x[which(table$type=="2")],y=table$trace[which(table$type=="2")]))+geom_point()
+# p3
+# p4<-ggplot(table[which(table$type=="3"),], aes(x=table$x[which(table$type=="3")],y=table$trace[which(table$type=="3")]))+geom_point()
+# p4
+
+# traceplots altogether
+p<-ggplot(table, aes(x=x,y=trace,col=as.factor(type)))+geom_point()+
+  scale_color_manual(name = c(""), values = cols, labels=c("Original model",
+                                                           #"DP with prior on alpha 1",
+                                                           "DP with prior on alpha 2","PY with fixed alpha, sigma","PY with prior on alpha, sigma"))+
+  labs(title="Traceplots of the posterior of the number of clusters")+xlab("iterations")+theme_bw()+geom_hline(yintercept = 16,color = "red")
+#pdf("plot_forest_data/forest_data_trace_K.pdf")
+p
 
 
 
 
 
+
+
+Tjur_data<- matrix(NA, nrow =length(Tjur_GJAM), ncol =4)
+Tjur_data[,1]<- Tjur_GJAM
+Tjur_data[,2]<- Tjur_GJAM2
+Tjur_data[,3]<- Tjur_PY1
+Tjur_data[,4]<- Tjur_PY2
+Tjur_data_df<- as.data.frame(Tjur_data)
+names(Tjur_data_df)<- c("GJAM","GJAM2","PY1","PY2")
+Tjur_fin<- melt(Tjur_data_df)
+
+p3<-ggplot(data=Tjur_fin)+geom_boxplot(aes(y=as.numeric(value),x=as.factor(variable),fill=as.factor(variable)))+
+  scale_y_continuous(name="Tjur")+
+  scale_fill_discrete(name = "Models", labels = c("GJAM","GJAM2","PY1","PY2"))+theme_bw() + theme_bw()
+p3
 
 
 #################################################################################Other models
-
-
-rl2  <- list(r = 8, N = 20,rate=10,shape=10,V=1) #here to modify N
-N_eps<-floor(.compute_tau_mean(0.3,2,0.1) + 2*.compute_tau_var(0.3,2,0.1))
-rl3   <- list(r = 8, N = N_eps, sigma_py=0.3, alpha=2)
-N_eps<-floor(.compute_tau_mean(0.5,10,0.1) + 2*.compute_tau_var(0.5,10,0.1))
-rl4   <- list(r = 8, N = N_eps,rate=10,shape=10,V1=1,ro.disc=0.5) #here to modify N
-
-ml4   <- list(ng = 1000, burnin = 500, typeNames = 'DA', reductList = rl4) #change ml
-ml3   <- list(ng = 1000, burnin = 500, typeNames = 'DA', reductList = rl3) #change ml
-ml2   <- list(ng = 1000, burnin = 500, typeNames = 'DA', reductList = rl2) #change ml
-ml1   <- list(ng = 1000, burnin = 500, typeNames = 'DA', reductList = rl1) #change ml
-ml   <- list(ng = 1000, burnin = 500, typeNames = 'DA', reductList = rl) #change ml
-
-form <- as.formula( ~ temp*deficit + I(temp^2) + I(deficit^2) )
-
-fit<-gjam(form, xdata = xdata, ydata = treeYdata, modelList = ml)
-fit1<-.gjam_1(form, xdata = xdata, ydata = treeYdata, modelList = ml1)
-fit2<-.gjam_2(form, xdata = xdata, ydata = treeYdata, modelList = ml2)
-fit3 <- .gjam_3(form,xdata,treeYdata,ml3)
-fit4<-.gjam_4(form, xdata = xdata, ydata = treeYdata, modelList = ml4)
-
-
-fit$fit$rmspeAll  #2.257202
-fit1$fit$rmspeAll #2.205223
-fit2$fit$rmspeAll #2.209276
-fit3$fit$rmspeAll #2.203517
-fit4$fit$rmspeAll #2.092136
-
-fit$fit$DIC   #2510192
-fit1$fit$DIC  #2496028
-fit2$fit$DIC  #2505273
-fit3$fit$DIC  #2496243
-fit4$fit$DIC  #2460125
-
+##gjam3
+alpha<-mcmc(fit3$chains$alpha.PY_g)
+alpha<-mcmc(fit3$chains$alpha.PY_g[seq(1,length(fit3$chains$alpha.PY_g),by=20)])
+plot(alpha)
+acfplot(alpha)
+cumuplot(alpha)
 
 
 
@@ -688,10 +746,10 @@ p
 #dev.off()
 
 #check the last weight
-pk_chains0_last<- mcmc(fit$chains$pk_g[,ncol(fit$chains$pk_g)])
-plot(pk_chains1_last)
-pk_chains1_last<- mcmc(fit1$chains$pk_g[,ncol(fit1$chains$pk_g)])
-plot(pk_chains1_last)
+#pk_chains0_last<- mcmc(fit$chains$pk_g[,ncol(fit$chains$pk_g)])
+#plot(pk_chains1_last)
+#pk_chains1_last<- mcmc(fit1$chains$pk_g[,ncol(fit1$chains$pk_g)])
+#plot(pk_chains1_last)
 pk_chains2_last<- mcmc(fit2$chains$pk_g[,ncol(fit2$chains$pk_g)])
 plot(pk_chains2_last)
 pk_chains3_last<- mcmc(fit3$chains$pk_g[,ncol(fit3$chains$pk_g)])
@@ -703,74 +761,11 @@ plot(pk_chains4_last)
 #TJUR coefficient
 
 
-sum((fit$prediction$ypredMu[1:100,]-Ydata[1:100,])^2)/sum(treeYdata[1:100,]^2) #0.5987808
-sum((fit1$prediction$ypredMu[1:100,]-treeYdata[1:100,])^2)/sum(treeYdata[1:100,]^2) #0.5961853
-sum((fit2$prediction$ypredMu[1:100,]-treeYdata[1:100,])^2)/sum(treeYdata[1:100,]^2) #0.5979932
-sum((fit3$prediction$ypredMu[1:100,]-treeYdata[1:100,])^2)/sum(treeYdata[1:100,]^2) #0.5977189
-sum((fit4$prediction$ypredMu[1:100,]-treeYdata[1:100,])^2)/sum(treeYdata[1:100,]^2) #0.5983279
+###Not applicable here. 
 
-
-
-#################################################################################Other models - BIOMOD
-
-
-## Not run:
-# species occurrences
-DataSpecies <- read.csv(system.file("external/species/mammals_table.csv",package="biomod2"), row.names = 1)
-# the presence/absences data for our species
-myRespName <- 'VulpesVulpes'
-myResp <- as.numeric(DataSpecies[,myRespName])
-# the XY coordinates of species data
-myRespXY <- DataSpecies[,c("X_WGS84","Y_WGS84")]
-# Environmental variables extracted from BIOCLIM (bio_3, bio_4, bio_7, bio_11 & bio_12) 
-myExpl = stack( system.file( "external/bioclim/current/bio3.grd",package="biomod2"),
-system.file( "external/bioclim/current/bio4.grd",package="biomod2"),
-system.file( "external/bioclim/current/bio7.grd",package="biomod2"),
-system.file( "external/bioclim/current/bio11.grd", package="biomod2"),
-system.file( "external/bioclim/current/bio12.grd",package="biomod2"))
-# 1. Formatting Data
-
-myBiomodData <- BIOMOD_FormatingData(resp.var = myResp,
-                                    expl.var = myExpl,
-                                    resp.xy = myRespXY,
-                                    resp.name = myRespName)
-# 2. Defining Models Options using default options.
-myBiomodOption <- BIOMOD_ModelingOptions()
-# 3. Doing Modelisation
-myBiomodModelOut <- BIOMOD_Modeling( myBiomodData,
-                                     models = c('SRE'),
-                                     models.options = myBiomodOption,
-                                     NbRunEval=1,
-                                     DataSplit=80,
-                                     Prevalence=0.5,
-                                     VarImport=0,
-                                     models.eval.meth = c('TSS','ROC'),
-                                     do.full.models=FALSE,
-                                     modeling.id="test2")
-# files have been created on hard drive
-list.files(myRespName,all.files=TRUE,recursive=TRUE)
-# remove properly the modeling objects and all the file saved on hard drive
-RemoveProperly(myBiomodModelOut)
-# check files had been removed
-list.files(myRespName,all.files=TRUE,recursive=TRUE)
-## End(Not run)
-
-
-
-
-
-
-
-
-r <- raster(nrow=18, ncol=36, xmn=0)
-r[150:250] <- 1
-r[251:450] <- 2
-plot( boundaries(r, type='inner') )
-plot( boundaries(r, type='outer') )
-plot( boundaries(r, classes=TRUE) )
-
-
-
-
-
+#sum((fit$prediction$ypredMu[1:100,]-Ydata[1:100,])^2)/sum(treeYdata[1:100,]^2) #0.5987808
+#sum((fit1$prediction$ypredMu[1:100,]-treeYdata[1:100,])^2)/sum(treeYdata[1:100,]^2) #0.5961853
+#sum((fit2$prediction$ypredMu[1:100,]-treeYdata[1:100,])^2)/sum(treeYdata[1:100,]^2) #0.5979932
+#sum((fit3$prediction$ypredMu[1:100,]-treeYdata[1:100,])^2)/sum(treeYdata[1:100,]^2) #0.5977189
+#sum((fit4$prediction$ypredMu[1:100,]-treeYdata[1:100,])^2)/sum(treeYdata[1:100,]^2) #0.5983279
 

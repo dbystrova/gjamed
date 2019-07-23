@@ -11,6 +11,7 @@ library(raster)
 library(ggplot2)
 library(rgdal)
 #library(biomod2)
+library(dplyr)
 Rcpp::sourceCpp('src/cppFns.cpp')
 source("R/gjamHfunctions_mod.R")
 source("R/simple_gjam_1.R")
@@ -68,7 +69,13 @@ new_B_env<-getSDM_env(zone.name, zone.env.folder, zone.env.variables, maskSimul=
 B_env_raster<- new_B_env$env.PROJ
 
 B_env<-as.data.frame(extract(B_env_raster, B_coords_xy))
+B_new <- B_env %>% distinct()
+
+
 B_env$cite<- rownames(B_coords_xy)
+
+my_data %>% distinct()
+
 
 
 ### merge environmental covariates and presence/abscence data by cite.
@@ -122,6 +129,10 @@ fit<-gjam(formula, xdata = xdata, ydata = Ydata, modelList = ml)
 #save(fit,file="models_Bagues_data_OSS/fit.Rda")
 #no Holdout
 #save(fit,file="models_forest_data_OSS/fit.Rda")
+
+
+B_new <- train %>% duplicated()
+
 
 
 ####### Out of sample prediction  -DOESN't work : chol() error ??

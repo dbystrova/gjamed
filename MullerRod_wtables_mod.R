@@ -1,4 +1,5 @@
 rm(list=ls())
+library(formattable)
 ###Data generation
 gen_data<- function(mu_vec=c(1,5,3,5), sigma_vec=rep(0.1, 4), ns=50, prob_vec=c(0.25,0.25,0.25,0.25) ){
   l<- length(mu_vec)

@@ -19,7 +19,7 @@ source("R/simple_gjam_1.R")
 source("R/simple_gjam_2.R")
 source("R/simple_gjam_3.R")
 source("R/simple_gjam_4.R")
-
+library(dplyr)
 
 d <- "https://github.com/jimclarkatduke/gjam/blob/master/forestTraits.RData?raw=True"
 source_data(d)
