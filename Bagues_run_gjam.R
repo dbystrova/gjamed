@@ -11,6 +11,7 @@ library(raster)
 library(ggplot2)
 library(rgdal)
 library(biomod2)
+library(AUC)
 Rcpp::sourceCpp('src/cppFns.cpp')
 source("R/gjamHfunctions_mod.R")
 source("R/simple_gjam_1.R")
@@ -35,12 +36,31 @@ B_coords_xy<- load_object("DB.XY.RData")
 PA_data<-load_object("DOM.mat.sites.species.PA.RData")
 AB_data<-load_object("DOM.mat.sites.species.abund.RData")
 
+
+### Colnames PA vs AB
+S_PA<- colnames(PA_data)
+S_AB<- colnames(AB_data)
+
+setdiff(S_PA,S_AB) #14797"
+
+
 PA_data_df<- as.data.frame(PA_data)
 PA_data_df$cite<- rownames(PA_data)
 
-spdf <- SpatialPoints(B_coords_xy,proj4string = CRS("+proj=lcc +lat_1=49 +lat_2=44 +lat_0=46.5 +lon_0=3 +x_0=700000 +y_0=6600000 +ellps=GRS80
-                                                    +towgs84=0,0,0,0,0,0,0 +units=m +no_defs"))
+AB_data_df<- as.data.frame(AB_data)
+AB_data_df$cite<- rownames(AB_data)
 
+
+PA_AB_common_plots<- intersect(AB_data_df$cite, PA_data_df$cite)
+
+
+
+#L1<- apply(!is.na(PA_data_df[,2:126]),1, which)
+#L2<- apply(!is.na(AB_data_df[,2:126]),1, which)
+
+
+#spdf <- SpatialPoints(B_coords_xy,proj4string = CRS("+proj=lcc +lat_1=49 +lat_2=44 +lat_0=46.5 +lon_0=3 +x_0=700000 +y_0=6600000 +ellps=GRS80
+#                                                    +towgs84=0,0,0,0,0,0,0 +units=m +no_defs"))
 
 
 #raster stack for the 100.tif 
@@ -68,6 +88,8 @@ getSDM_env = function(zone.name, zone.env.folder, zone.env.variables, maskSimul)
   return(list(env.CALIB = zone.env.stk.CALIB
               , env.PROJ = zone.env.stk.PROJ))
 }
+
+X<-  mask(zone.env.stk.CALIB, maskSimul)
 
 
 new_B_env<-getSDM_env(zone.name, zone.env.folder, zone.env.variables, maskSimul=raster("MASK_100m.tif")) 
@@ -138,8 +160,8 @@ xnew<- prcomp(scaled.data)
 xdata_pca<- as.data.frame(xnew$x[,1:3])
 
 ##########GJAM standart model
-y<- train[,7:131]
-xdata<- train[,2:6]
+y<- train[1:1000,7:131]
+xdata<- train[1:1000,2:6]
 #xdata<- scaled.data
 #xdata<- xdata_pca
 
@@ -147,7 +169,7 @@ xdata<- train[,2:6]
 formula <- as.formula( ~   bio_1_0 +  bio_8_0 + I(bio_8_0^2) + I(bio_1_0^2))
 Ydata  <- gjamTrimY(y,10)$y             # at least 10 plots - re-group rare species
 S<- ncol(Ydata)
-rl <- list(r =5, N = S)
+rl <- list(r =5, N = 50)
 ml   <- list(ng = 1000, burnin = 100, typeNames = 'PA', reductList = rl) #change ml
 fit<-gjam(formula, xdata = xdata, ydata = Ydata, modelList = ml)
 
@@ -162,15 +184,29 @@ qr(x)$rank
 
 
 ####### Out of sample prediction  -DOESN't work : chol() error ??
-#y_test<- test[,7:131]
+Ykeep<- as.vector(colnames(Ydata))
+y_test<- test[1:200,c(Ykeep[1:(ncol(Ydata)-1)])]
 #xdata_test<- test[,2:6]
-xdata_test<- test[,2:6]
+xdata_test<- test[1:200,2:6]
 
 
 new <- list(xdata =xdata_test,  nsim = 1000) # effort unchanged 
 p1  <- gjamPredict(output = fit, newdata = new)
-plot(y_test, p1$sdList$yMu ,ylab = 'Predicted',cex=.1)
+plot(y_test[,2], p1$sdList$yMu[,2])
 abline(0,1)
+
+AUC_j_env<-vector()
+for(i in 1:ncol(y_test)) AUC_j_env<-c(AUC_j_env,auc(roc(p1$sdList$yMu[,i],factor(y_test[,i]))))
+
+Tjur_j_env<-vector()
+
+for(k in 1:ncol(y_test)){
+  indx <- y_test[,k]==1
+  Tjur_j_env <- c(Tjur_j_env,(mean(p1$sdList$yMu[indx,k]) - mean(p1$sdList$yMu[!indx,k])))
+}
+
+
+
 
 ############################################
 ####Check the trace for number of groups. From the previous analysis we know that the number of functional groups is 16
@@ -520,4 +556,23 @@ RemoveProperly(myBiomodModelOut)
 # check files had been removed
 list.files(myRespName,all.files=TRUE,recursive=TRUE)
 ## End(Not run)
+
+
+
+
+
+
+
+
+r <- raster(nrow=18, ncol=36, xmn=0)
+r[150:250] <- 1
+r[251:450] <- 2
+plot( boundaries(r, type='inner') )
+plot( boundaries(r, type='outer') )
+plot( boundaries(r, classes=TRUE) )
+
+
+
+
+
 

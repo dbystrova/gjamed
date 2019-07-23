@@ -322,7 +322,7 @@ gibbs_py <- function(n.iter=1000,M=1,sigma=0.5, n_s=50,ydata=y){
   sig_trace<- NULL
   ## start with a plot of a kernel density estimate of the data
   d<-density(y,bw = "sj")
-  plot(d,xlab="X",ylab="Y",bty="l",type="l",xlim=c(-2,15),ylim=c(0,1), main="")
+ # plot(d,xlab="X",ylab="Y",bty="l",type="l",xlim=c(-2,15),ylim=c(0,1), main="")
   ## now the Gibbs sampler
   for(iter in 1:n.iter){
     th  <- sample.th_py(th,sig,M,sigma,y)
@@ -341,10 +341,10 @@ gibbs_py <- function(n.iter=1000,M=1,sigma=0.5, n_s=50,ydata=y){
   }
   ## report summaries ###########################
   fbar <- apply(fgrid[floor(n.iter/2):n.iter,],2,mean)
-  lines(xgrid,fbar,lwd=3,col=2)
+ # lines(xgrid,fbar,lwd=3,col=2)
   ecfbar <- apply(ecfgrid[floor(n.iter/2):n.iter,],2,mean)
-  plot(ecdf(y),xlab="X",ylab="Y",bty="l",xlim=c(min(y),max(y)),ylim=c(0,1), main="")
-  lines(cgrid,ecfbar,lwd=3,col=2)
+ # plot(ecdf(y),xlab="X",ylab="Y",bty="l",xlim=c(min(y),max(y)),ylim=c(0,1), main="")
+ # lines(cgrid,ecfbar,lwd=3,col=2)
   for(iter in 1:n.iter){ lines(cgrid,ecfgrid[iter,],col=iter,lty=3) }
   #ks_test<- ks.test(ecfbar,ecdf(y))
   njbar <- apply(njlist,2,mean,na.rm=T)
@@ -360,7 +360,7 @@ gibbs_py <- function(n.iter=1000,M=1,sigma=0.5, n_s=50,ydata=y){
 
 sample<- gen_data(mu_vec=c(1,10),sigma_vec=rep(0.2, 2),ns=200,prob_vec=c(0.5,0.5))
 
-mc_py<- gibbs_py(n.iter=2000,M=1,sigma=0.5, n_s=200,ydata=sample)
+#mc_py<- gibbs_py(n.iter=2000,M=1,sigma=0.5, n_s=200,ydata=sample)
 #xgrid <- seq(from=-2,to=15,length=100)
 #cgrid<- sort(y)
 #plot(ecdf(y),xlab="X",ylab="Y",bty="l",xlim=c(-2,15),ylim=c(0,1), main="")
@@ -454,7 +454,7 @@ gibbs_py_ap1 <- function(n.iter=1000,M=1,sigma=0.5, n_s=50,ydata=y)
   sig_trace<- NULL
   ## start with a plot of a kernel density estimate of the data
   d<-density(y,bw = "sj")
-  plot(d,xlab="X",ylab="Y",bty="l",type="l",xlim=c(-2,15),ylim=c(0,1), main="")
+  #plot(d,xlab="X",ylab="Y",bty="l",type="l",xlim=c(-2,15),ylim=c(0,1), main="")
   ## now the Gibbs sampler
   for(iter in 1:n.iter){
     th  <- sample.th_py_ap1(th,sig,M,sigma,y)
@@ -464,7 +464,7 @@ gibbs_py_ap1 <- function(n.iter=1000,M=1,sigma=0.5, n_s=50,ydata=y)
     sig_trace<- rbind(sig_trace,sig)
     f   <- fbar_py_ap1(xgrid,th,sig,M,sigma)
     ecf<- ebar_py_ap1(cgrid,th,sig,M,sigma)
-    lines(xgrid,f,col=iter,lty=3)
+    #lines(xgrid,f,col=iter,lty=3)
     fgrid <- rbind(fgrid,f)
     ecfgrid<- rbind(ecfgrid,ecf)
     nj <- table(th)                 # counts
@@ -473,10 +473,10 @@ gibbs_py_ap1 <- function(n.iter=1000,M=1,sigma=0.5, n_s=50,ydata=y)
   }
   ## report summaries ###########################
   fbar <- apply(fgrid[floor(n.iter/2):n.iter,],2,mean)
-  lines(xgrid,fbar,lwd=3,col=2)
+  #lines(xgrid,fbar,lwd=3,col=2)
   ecfbar <- apply(ecfgrid[floor(n.iter/2):n.iter,],2,mean)
-  plot(ecdf(y),xlab="X",ylab="Y",bty="l",xlim=c(min(y),max(y)),ylim=c(0,1), main="")
-  lines(cgrid,ecfbar,lwd=3,col=2)
+  #plot(ecdf(y),xlab="X",ylab="Y",bty="l",xlim=c(min(y),max(y)),ylim=c(0,1), main="")
+  #lines(cgrid,ecfbar,lwd=3,col=2)
   for(iter in 1:n.iter){ lines(cgrid,ecfgrid[iter,],col=iter,lty=3) }
   #ks_test<- ks.test(ecfbar,ecdf(y))
   njbar <- apply(njlist,2,mean,na.rm=T)
@@ -490,7 +490,7 @@ gibbs_py_ap1 <- function(n.iter=1000,M=1,sigma=0.5, n_s=50,ydata=y)
 }
 
 
-mc_py_ap1<- gibbs_py_ap1(n.iter=1000,M=1,sigma=0.5, n_s=50,ydata=sample)
+#mc_py_ap1<- gibbs_py_ap1(n.iter=1000,M=1,sigma=0.5, n_s=50,ydata=sample)
 
 
 ######################################################NG
@@ -584,7 +584,7 @@ gibbs_ng_ap2 <- function(n.iter=1000,sigma=0.5, tau=1, n_s=50, ydata=y)
   sig_trace<- NULL
   ## start with a plot of a kernel density estimate of the data
   d<-density(y,bw = "sj")
-  plot(d,xlab="X",ylab="Y",bty="l",type="l",xlim=c(-2,15),ylim=c(0,1), main="")
+  #plot(d,xlab="X",ylab="Y",bty="l",type="l",xlim=c(-2,15),ylim=c(0,1), main="")
   ## now the Gibbs sampler
   for(iter in 1:n.iter){
     th  <- sample.th_ng_ap2(th,sig,sigma,tau,y)
@@ -594,7 +594,7 @@ gibbs_ng_ap2 <- function(n.iter=1000,sigma=0.5, tau=1, n_s=50, ydata=y)
     sig_trace<- rbind(sig_trace,sig)
     f   <- fbar_ng_ap2(xgrid,th,sig,sigma,tau)
     ecf<- ebar_ng_ap2(cgrid,th,sig,sigma,tau)
-    lines(xgrid,f,col=iter,lty=3)
+    #lines(xgrid,f,col=iter,lty=3)
     fgrid <- rbind(fgrid,f)
     ecfgrid<- rbind(ecfgrid,ecf)
     nj <- table(th)                 # counts
@@ -603,10 +603,10 @@ gibbs_ng_ap2 <- function(n.iter=1000,sigma=0.5, tau=1, n_s=50, ydata=y)
   }
   ## report summaries ###########################
   fbar <- apply(fgrid[floor(n.iter/2):n.iter,],2,mean)
-  lines(xgrid,fbar,lwd=3,col=2)
+  #lines(xgrid,fbar,lwd=3,col=2)
   ecfbar <- apply(ecfgrid[floor(n.iter/2):n.iter,],2,mean)
-  plot(ecdf(y),xlab="X",ylab="Y",bty="l",xlim=c(min(y),max(y)),ylim=c(0,1), main="")
-  lines(cgrid,ecfbar,lwd=3,col=2)
+  #plot(ecdf(y),xlab="X",ylab="Y",bty="l",xlim=c(min(y),max(y)),ylim=c(0,1), main="")
+  #lines(cgrid,ecfbar,lwd=3,col=2)
   for(iter in 1:n.iter){ lines(cgrid,ecfgrid[iter,],col=iter,lty=3) }
   #ks_test<- ks.test(ecfbar,ecdf(y))
   njbar <- apply(njlist,2,mean,na.rm=T)
@@ -640,7 +640,7 @@ mc_ng_ap2<- gibbs_ng_ap2(n.iter=1000,sigma=0.5, tau=1, n_s=50, ydata=sample)
 
 ##############################################n=50##########################################################################
 
-set.seed(123)
+set.seed(120)
 sample<- gen_data(mu_vec=c(1,10),sigma_vec=rep(0.2, 2),ns=50,prob_vec=c(0.5,0.5))
 #hist(sample,probability=TRUE,breaks=20,col=grey(.9))
 #plot(density(sample,bw = "sj"))
@@ -660,9 +660,9 @@ for(m in 1:length(M_vec)){
     for(j in 1:length(sigma_vec)){
       K_dmat[i,1]<- M_vec[m]
       K_dmat[i,2]<- sigma_vec[j]
-      mc_py<- gibbs_py(n.iter=1000,M=M_vec[m],sigma=sigma_vec[j], n_s=length(y_data),ydata=y_data)
-      mc_py_ap1<- gibbs_py_ap1(n.iter=1000,M=M_vec[m],sigma=sigma_vec[j], n_s=length(y_data),ydata=y_data)
-      mc_ng_ap2<- gibbs_ng_ap2(n.iter=1000,sigma=sigma_vec[j], tau=M_vec[m], n_s=length(y_data), ydata=y_data)
+      mc_py<- gibbs_py(n.iter=10000,M=M_vec[m],sigma=sigma_vec[j], n_s=length(y_data),ydata=y_data)
+      mc_py_ap1<- gibbs_py_ap1(n.iter=10000,M=M_vec[m],sigma=sigma_vec[j], n_s=length(y_data),ydata=y_data)
+      mc_ng_ap2<- gibbs_ng_ap2(n.iter=10000,sigma=sigma_vec[j], tau=M_vec[m], n_s=length(y_data), ydata=y_data)
       K_dmat[i,3]<- mc_py$Kd
       K_dmat[i,4]<- mc_py_ap1$Kd
       K_dmat[i,5]<- mc_ng_ap2$Kd
@@ -780,9 +780,9 @@ for(m in 1:length(M_vec)){
   for(j in 1:length(sigma_vec)){
     K_dmat[i,1]<- M_vec[m]
     K_dmat[i,2]<- sigma_vec[j]
-    mc_py<- gibbs_py(n.iter=1000,M=M_vec[m],sigma=sigma_vec[j], n_s=length(y_data),ydata=y_data)
-    mc_py_ap1<- gibbs_py_ap1(n.iter=1000,M=M_vec[m],sigma=sigma_vec[j], n_s=length(y_data),ydata=y_data)
-    mc_ng_ap2<- gibbs_ng_ap2(n.iter=1000,sigma=sigma_vec[j], tau=M_vec[m], n_s=length(y_data), ydata=y_data)
+    mc_py<- gibbs_py(n.iter=10000,M=M_vec[m],sigma=sigma_vec[j], n_s=length(y_data),ydata=y_data)
+    mc_py_ap1<- gibbs_py_ap1(n.iter=10000,M=M_vec[m],sigma=sigma_vec[j], n_s=length(y_data),ydata=y_data)
+    mc_ng_ap2<- gibbs_ng_ap2(n.iter=10000,sigma=sigma_vec[j], tau=M_vec[m], n_s=length(y_data), ydata=y_data)
     K_dmat[i,3]<- mc_py$Kd
     K_dmat[i,4]<- mc_py_ap1$Kd
     K_dmat[i,5]<- mc_ng_ap2$Kd
