@@ -11905,9 +11905,9 @@ sqrtSeq <- function(maxval){ #labels for sqrt scale
                                               as.vector(t(mur[holdoutIndex,corCols])),
                                               1),holdoutN,SC) 
         }
-  #      w[holdoutIndex,corCols] <- yPredict[holdoutIndex,corCols]  <- 
-  #                                  .rMVN(holdoutN,muo,css[corCols,corCols])
-          w[holdoutIndex,corCols] <- yPredict[holdoutIndex,corCols]  <- 
+    #   w[holdoutIndex,corCols] <- yPredict[holdoutIndex,corCols]  <- 
+     #                               .rMVN(holdoutN,muo,css[corCols,corCols])
+         w[holdoutIndex,corCols] <- yPredict[holdoutIndex,corCols]  <- 
                                     rmvnormRcpp(holdoutN,rep(0,length(corCols)),
                                                 css[corCols,corCols]) + muo
       }

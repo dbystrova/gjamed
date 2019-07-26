@@ -396,7 +396,7 @@ df_alpha$type<- "posterior"
 #df_alpha_prior <- data.frame(matrix(NA, nrow =it-burn, ncol =1))
 #df_alpha_prior$alpha<- rgamma(it-burn, shape, rate)
 #alpha_seq= seq(min(alpha.chains[-c(1:burn)]),max(alpha.chains[-c(1:burn)]),length=it-burn)
-#df_alpha_prior$alpha <- dgamma(alpha_seq,rate,shape)
+#df_alpha_prior$alpha <- dgamma(alpwha_seq,rate,shape)
 
 #df_alpha_prior$type<- "prior"
 #df_alpha_all<- rbind(df_alpha[-1,],df_alpha_prior[-1,])

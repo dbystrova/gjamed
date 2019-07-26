@@ -13,6 +13,13 @@ library(rgdal)
 library(biomod2)
 library(AUC)
 library(formattable)
+library(mcclust.ext)
+library(reshape2)
+library(plyr)
+library(dplyr)
+library(gridExtra)
+library(grid)
+
 Rcpp::sourceCpp('src/cppFns.cpp')
 source("R/gjamHfunctions_mod.R")
 source("R/simple_gjam_1.R")
@@ -26,7 +33,7 @@ load_object <- function(file) {
   tmp[[ls(tmp)[1]]]
 }
 
-
+pdf("plot_forest_data/Bauges_data_all_10K.pdf")
 #setwd("~/Downloads/RFate-master/data_supplements/Bauges")
 
 
@@ -37,6 +44,8 @@ B_coords_xy<- load_object("DB.XY.RData")
 PA_data<-load_object("DOM.mat.sites.species.PA.RData")
 AB_data<-load_object("DOM.mat.sites.species.abund.RData")
 
+
+pdf("Bagues_10_k.pdf")
 
 ### Colnames PA vs AB
 S_PA<- colnames(PA_data)
@@ -188,27 +197,39 @@ Ydat[,2:125]<- Ydat_num
 AB_norm_PA<- merge(env_data_norm,Ydat,by="cite")
 summary(AB_norm_PA)
 
+
+
+
 ########################################################################Group numbers
 Species_names_groups<- read.csv("PFG_Bauges_Description_2017.csv", sep="\t")
 # K=16 functional groups
+true_names<- as.data.frame(names(table(Species_names_groups$PFG)))
+names(true_names)<- c("PFG")
+true_names$K_n<- 1:16
+
+Species_names_groups_num<- merge(Species_names_groups,true_names, by="PFG" )
+
+
+
+
 #############################################################################Fitting the model 
 
 data<- AB_norm_PA
 
 set.seed(123)
-smp_size <- floor(0.90 * nrow(data))
+smp_size <- floor(0.70 * nrow(data))
 train_ind <- sample(seq_len(nrow(data)), size = smp_size)
 
 train <- data[train_ind, ]
 test <- data[-train_ind, ]
-save(train, file = "sample_data_train2.Rds")
-save(test, file = "sample_data_test2.Rds")
+save(train, file = "sample_data_train4.Rds")
+save(test, file = "sample_data_test4.Rds")
 
 
 
 
-it<-1000
-burn<-500
+it<-10000
+burn<-5000
 holdout<- sample(seq_len(nrow(train)), size = 100)
 
 
@@ -230,17 +251,77 @@ y<- train[,7:130]
 #xdata<- xdata_pca[train_ind,]
 xdata<- train[,2:6]
 
+
+
+#### rare categories 
+
+
+
+z<-apply(Ydata, 2, count)
+ns<- ncol(Ydata)
+Nr_oc<- matrix(NA,nrow=ncol(Ydata),ncol=5)
+for(i in 1:length(z)){ 
+  Nr_oc[i,1]<- names(z)[i]
+  if(z[[i]]$x[1]==0){ Nr_oc[i,2]<-as.numeric(z[[i]]$freq[1]) }
+  if(z[[i]]$x[2]==1){ Nr_oc[i,3]<-as.numeric(z[[i]]$freq[2]) }
+  if(is.na(z[[i]]$x[3])){ Nr_oc[i,4]<-as.numeric(z[[i]]$freq[3]) }
+  if(Nr_oc[i,3]<10){Nr_oc[i,5]<-1}
+  else { 
+    if(Nr_oc[i,3]<50){Nr_oc[i,5]<-2}
+    else{Nr_oc[i,5]<-3}}
+
+}
+
+N_occur<- as.data.frame(Nr_oc)
+names(N_occur)<- c("species","Abs","Pres","NA","Group")
 #xdata<- scaled.data
 #xdata<- xdata_pca
 #save(xdata, file = "sample_data_train_pca.Rds")
 
+
+
+
+z2<-apply(y_test, 2, count)
+ns<- ncol(y_test)
+Nr_oc2<- matrix(NA,nrow=ncol(y_test),ncol=5)
+for(i in 1:length(z2)){ 
+
+  if(dim(z2[[i]])[1]==3){
+  Nr_oc2[i,1]<- names(z2)[i]
+  if(z2[[i]]$x[1]==0){ Nr_oc2[i,2]<-as.numeric(z2[[i]]$freq[1]) }
+  if(z2[[i]]$x[2]==1){ Nr_oc2[i,3]<-as.numeric(z2[[i]]$freq[2]) }
+  if(is.na(z2[[i]]$x[3])){ Nr_oc2[i,4]<-as.numeric(z2[[i]]$freq[3]) }
+  if(Nr_oc2[i,3]<10){Nr_oc2[i,5]<-1}
+  else { 
+    if(Nr_oc2[i,3]<30){Nr_oc2[i,5]<-2}
+    else{Nr_oc2[i,5]<-3}}
+  }
+  else{
+    Nr_oc2[i,1]<- names(z2)[i]
+    if(z2[[i]]$x[1]==0){ Nr_oc2[i,2]<-as.numeric(z2[[i]]$freq[1]) }
+    Nr_oc2[i,3]<-0
+    if(is.na(z2[[i]]$x[3])){ Nr_oc2[i,4]<-as.numeric(z2[[i]]$freq[3]) }
+    Nr_oc2[i,5]<-1
+  }
+}
+
+
+
+N_occur2<- as.data.frame(Nr_oc2)
+names(N_occur2)<- c("species","Abs","Pres","NA","Group2")
+
+
+
+
+
+
 #formula <- as.formula( ~ PC1 +  PC2 + I(PC1^2)+  I(PC2^2))
 #temp*deficit + I(temp^2) + I(deficit^2) 
-formula <- as.formula( ~   bio_12_0  + slope + I(bio_12_0^2) + I(slope^2) )
+formula <- as.formula( ~   bio_19_0  + slope + I(bio_19_0^2) + I(slope^2) )
 Ydata  <- gjamTrimY(y,10)$y             # at least 10 plots - re-group rare species
 S<- ncol(Ydata)
-rl <- list(r =5, N = S)
-ml   <- list(ng = 1000, burnin = 100, typeNames = 'PA', reductList = rl,PREDICTX = F) #change ml
+rl <- list(r =10, N = S)
+ml   <- list(ng = it, burnin = burn, typeNames = 'PA', reductList = rl,PREDICTX = F) #change ml
 fit<-gjam(formula, xdata = xdata, ydata = Ydata, modelList = ml)
 
 
@@ -250,9 +331,11 @@ qr(x)$rank
 
 #save(fit,file="models_Bagues_data_OSS/fit.Rda")
 #save(fit,file="models_Bagues_data_OSS/fit_2.Rda")
+#save(fit,file="models_Bagues_data_OSS/fit_3.Rda")
+
 #no Holdout
 
-#fit<- load_object("models_Bagues_data_OSS/fit.Rda")
+#fit<- load_object("models_Bagues_data_OSS/fit_3.Rda")
 ####### Out of sample prediction  -DOESN't work : chol() error ??
 Ykeep<- as.vector(colnames(Ydata))
 y_test<- test[,c(Ykeep[1:(ncol(Ydata)-1)])]
@@ -293,18 +376,36 @@ mean(na.omit(Tjur_GJAM))
 
 
 
+
+
+
+
+
+
+
+
+
+
+
 ############################################
 ####Check the trace for number of groups. From the previous analysis we know that the number of functional groups is 16
 
 trace<-apply(fit$chains$kgibbs,1,function(x) length(unique(x)))
 df<-as.data.frame(trace)
-df$iter<-1:1000
+df$iter<-1:it
 #plot(apply(fit$chains$kgibbs,1,function(x) length(unique(x))))
 p<-ggplot(df, aes(y=trace, x=iter)) + geom_point() + 
   labs(title=paste0("Trace plot for the number of groups"))+
   theme_bw() + theme(axis.text.x = element_text(angle = 0, hjust = 1,size = 10), strip.text = element_text(size = 15),legend.position = "top", plot.title = element_text(hjust = 0.5))+
   geom_hline(yintercept = 16,color = "red")
 p
+
+
+
+#pdf("plot_forest_data/Bauges_data_trace_K.pdf")
+#p
+#dev.off()
+
 
 ####The Dirichlet process prior with conjugation############################################
 
@@ -323,12 +424,12 @@ shape=((alpha.DP)^2)/20
 rate=alpha.DP/20
 
 
-rl2  <- list(r = 5, N = S,rate=rate,shape=shape,V=1) #here to modify N
-ml2   <- list(ng = 1000, burnin = 500, typeNames = 'PA', reductList = rl2,PREDICTX = F) #change ml
+rl2  <- list(r = 10, N = S,rate=rate,shape=shape,V=1) #here to modify N
+ml2   <- list(ng = it, burnin = burn, typeNames = 'PA', reductList = rl2,PREDICTX = F) #change ml
 
 fit2<-.gjam_2(formula, xdata = xdata, ydata = Ydata, modelList = ml2)
-#save(fit2,file="models_Bagues_data_OSS/fit2_2.Rda")
-#fit2<- load_object("models_Bagues_data_OSS/fit2.Rda")
+#save(fit2,file="models_Bagues_data_OSS/fit2_3.Rda")
+#fit2<- load_object("models_Bagues_data_OSS/fit2_2.Rda")
 
 
 new <- list(xdata =xdata_test,  nsim = 1000) # effort unchanged 
@@ -361,7 +462,7 @@ mean(na.omit(Tjur_GJAM2))
 
 trace<-apply(fit2$chains$kgibbs,1,function(x) length(unique(x)))
 df<-as.data.frame(trace)
-df$iter<-1:1000
+df$iter<-1:it
 #plot(apply(fit$chains$kgibbs,1,function(x) length(unique(x))))
 p<-ggplot(df, aes(y=trace, x=iter)) + geom_point() + 
   labs(title=paste0("Trace plot for the number of groups"))+
@@ -369,14 +470,27 @@ p<-ggplot(df, aes(y=trace, x=iter)) + geom_point() +
   geom_hline(yintercept = 16,color = "red")
 p
 
+
+# fit_c<-  load_object("models_Bagues_data_OSS/fit2.Rda")
+# 
+# 
+# newdata<- new
+# FULL<- FALSE
+# y2plot = NULL
+# ylim = NULL
+# PLOT<- F
+# p_new<- .gjamPrediction(fit2, newdata, y2plot, PLOT, ylim, FULL)
+#   
+
 #################################################################################PY
 K=16
 eps<-0.1
 sigma_py<-0.25
 funcPY_root<-function(x) {(x/sigma_py)*(prod((x+sigma_py+c(1:S) -1)/(x+c(1:S) -1))-1) - K}
 alpha.PY<-.bisec(funcPY_root,0.0001,100)
+alpha.PY_1<- alpha.PY
 N_eps<-floor(.compute_tau_mean_large_dim(sigma_py,alpha.PY,eps) + 2*.compute_tau_var_large_dim(sigma_py,alpha.PY,eps))
-rl3   <- list(r = 5, N = N_eps, sigma_py=sigma_py, alpha=alpha.PY)
+rl3   <- list(r = 10, N = N_eps, sigma_py=sigma_py, alpha=alpha.PY)
 ml3   <- list(ng = it, burnin = burn, typeNames = 'PA', reductList = rl3,PREDICTX = F)
 
 
@@ -385,7 +499,7 @@ fit3 <- .gjam_3(formula,xdata,Ydata,ml3)
 
 
 #save(fit3,file="models_Bagues_data_OSS/fit3.Rda")
-#save(fit3,file="models_Bagues_data_OSS/fit3_2.Rda")
+#save(fit3,file="models_Bagues_data_OSS/fit3_3.Rda")
 
 #fit3<- load_object("models_Bagues_data_OSS/fit3.Rda")
 
@@ -422,22 +536,13 @@ for(k in 1:ncol(y_test)){
 mean(na.omit(Tjur_PY1))
 
 
-k_mat_200<- as.data.frame(K_dmat)
-k_mat_200$n<- 200
-names(k_mat_200)<- c("alpha","sigma","PY","PY_A1","NG_A2","N")
-
-
-write.csv(k_mat_200, file = "K_200.csv")
-formattable(k_mat_200)
-
-
 
 ############################################
 ####Check the trace for number of groups. From the previous analysis we know that the number of functional groups is 16
 
 trace<-apply(fit3$chains$kgibbs,1,function(x) length(unique(x)))
 df<-as.data.frame(trace)
-df$iter<-1:1000
+df$iter<-1:it
 #plot(apply(fit$chains$kgibbs,1,function(x) length(unique(x))))
 p<-ggplot(df, aes(y=trace, x=iter)) + geom_point() + 
   labs(title=paste0("Trace plot for the number of groups"))+
@@ -457,9 +562,7 @@ p
 
 
 
-
-
-
+#corrplot( comp.psm(fit$chains$kgibbs))
 
 
 K<-16
@@ -482,6 +585,7 @@ if(sum(alp_sig$is_less_150==T)==0) cat("!! no choice under N=150, need to rechec
 k<-max(which(alp_sig$is_less_150==T)) #max sigma s.t. N<150
 sigma_py<-alp_sig[k,"sigma"]
 alpha.PY<-alp_sig[k,"alpha"]
+alpha.PY_2<- alpha.PY
 #fixing hyperparameters
 ro.disc=1-2* sigma_py
 shape=((alpha.PY)^2)/10
@@ -492,14 +596,14 @@ alpha.max_val<-5
 sigma_py_max<-0.5
 N_eps<-floor(.compute_tau_mean_large_dim(sigma_py_max,alpha.max_val,eps) + 2*.compute_tau_var_large_dim(sigma_py_max,alpha.max_val,eps))
 
-rl4   <- list(r = 5, N =N_eps,rate=rate,shape=shape,V1=1,ro.disc=ro.disc) #here to modify N
+rl4   <- list(r = 10, N =N_eps,rate=rate,shape=shape,V1=1,ro.disc=ro.disc) #here to modify N
 ml4   <- list(ng = it, burnin = burn, typeNames = 'PA', reductList = rl4,PREDICTX = F)
 
 fit4<-.gjam_4(formula, xdata = xdata, ydata = Ydata, modelList = ml4)
 #fit4<- load_object("models_Bagues_data_OSS/fit4.Rda")
 
 
-#save(fit4,file="models_Bagues_data_OSS/fit4_2.Rda")
+#save(fit4,file="models_Bagues_data_OSS/fit4_3.Rda")
 
 
 new <- list(xdata =xdata_test,  nsim = 1000) # effort unchanged 
@@ -539,7 +643,7 @@ mean(na.omit(Tjur_PY2))
 
 trace<-apply(fit4$chains$kgibbs,1,function(x) length(unique(x)))
 df<-as.data.frame(trace)
-df$iter<-1:1000
+df$iter<-1:it
 #plot(apply(fit$chains$kgibbs,1,function(x) length(unique(x))))
 p<-ggplot(df, aes(y=trace, x=iter)) + geom_point() + 
   labs(title=paste0("Trace plot for the number of groups"))+
@@ -550,6 +654,83 @@ p
 
 
 ########################################## Model comparison
+
+
+
+
+################################################################################ Partition
+
+Species_names_groups_num
+Species<- colnames(Ydata)[1: (ncol(Ydata)-1)]
+
+True_clustering<- as.data.frame(Species)
+names(True_clustering)<- c("CODE_CBNA")
+True_clust<- merge(Species_names_groups_num,True_clustering, by="CODE_CBNA")
+#True_clust<- True_clust[order(True_clust$CODE_CBNA),]
+
+
+
+n <- ncol(Mat_new)
+M <- nrow(Mat_new)
+
+if(sum(Mat_new %in% (1:n)) < n * M){
+  stop("All elements of cls must be integers in 1:nobs")
+}   
+
+Mat_new<- matrix(NA, nrow=nrow(Mat),ncol=ncol(Mat))
+
+for(i in 1:nrow(Mat) ){
+  label<-unique(Mat[i,])
+  change<- label[which(label>ncol(Mat))]
+  all_n<- 1:ncol(Mat)
+  admis<- all_n[which(!(all_n %in% label))]
+  Mat_new[i,]<-Mat[i,]
+  for(k in 1:length(change)){
+    old_row<- Mat_new[i,]
+    rep <-old_row==change[k]
+    Mat_new[i,] <- replace(Mat_new[i,], rep, admis[k])
+  }
+}
+
+
+tr_cl<-True_clust$K_n 
+CM_DP1<- comp.psm(fit$chains$kgibbs[(burn+1):it,])
+CM_DP2<- comp.psm(fit2$chains$kgibbs[(burn+1):it,])
+CM_PY1<- comp.psm(fit3$chains$kgibbs[(burn+1):it,])
+CM_PY2<- comp.psm(Mat_new[(burn+1):it,])
+
+
+
+
+mbind_DP1 <- minbinder(CM_DP1)
+mbind_DP2 <- minbinder(CM_DP2)
+mbind_PY1 <- minbinder(CM_PY1)
+mbind_PY2 <- minbinder(CM_PY2)
+
+#mpear2 <- maxpear(psm2)
+# Relabelling
+#k <- apply(cls.draw2,1, function(cl) length(table(cl)))
+#max.k <- as.numeric(names(table(k))[which.max(table(k))])
+#relab2 <- relabel(cls.draw2[k==max.k,])
+# compare clusterings found by different methods with true grouping
+Ar_D_DP1<- arandi(mbind_DP1$cl[1:120], tr_cl)
+Ar_D_DP2<-arandi(mbind_DP2$cl[1:120], tr_cl)
+Ar_D_PY1<-arandi(mbind_PY1$cl[1:120], tr_cl)
+Ar_D_PY2<-arandi(mbind_PY2$cl[1:120], tr_cl)
+Ar_D_fin_table<- as.data.frame(t(c(Ar_D_DP1,Ar_D_DP2,Ar_D_PY1,Ar_D_PY2)))
+names(Ar_D_fin_table)<- c("GJAM","GJAM2","PY1","PY2")
+formattable(Ar_D_fin_table)
+
+
+vi.dist_DP1<- vi.dist(mbind_DP1$cl[1:120], tr_cl)
+vi.dist_DP2<- vi.dist(mbind_DP2$cl[1:120], tr_cl)
+vi.dist_PY1<- vi.dist(mbind_PY1$cl[1:120], tr_cl)
+vi.dist_PY2<- vi.dist(mbind_PY2$cl[1:120], tr_cl)
+VI_D_fin_table<- as.data.frame(t(c(vi.dist_DP1,vi.dist_DP2,vi.dist_PY1,vi.dist_PY2)))
+names(VI_D_fin_table)<- c("GJAM","GJAM2","PY1","PY2")
+formattable(VI_D_fin_table)
+
+
 
 
 
@@ -572,52 +753,32 @@ AUC_data[,3]<- AUC_PY1
 AUC_data[,4]<- AUC_PY2
 AUC_data_df<- as.data.frame(AUC_data)
 names(AUC_data_df)<- c("GJAM","GJAM2","PY1","PY2")
+#names(AUC_data_df)<- c("GJAM","GJAM2")
+AUC_data_df$species<- colnames(y_test)[1:ncol(y_test)-1]
 AUC_fin<- melt(AUC_data_df)
+AUC_fin<- merge(AUC_fin,N_occur,by="species")
+AUC_fin<- merge(AUC_fin,N_occur2[,c("species","Group2")],by="species")
+
 
 p2<-ggplot(data=AUC_fin)+geom_boxplot(aes(y=as.numeric(value),x=as.factor(variable),fill=as.factor(variable)))+
-  scale_y_continuous(name="AUC")+
-  scale_fill_discrete(name = "Models", labels = c("GJAM","GJAM2","PY1","PY2"))+theme_bw() + theme_bw()
+  scale_y_continuous(name="AUC")+facet_grid(Group ~.,scales = "free")+
+  scale_fill_discrete(name = "Models", labels = c("GJAM","GJAM2","PY1","PY2"))+xlab("Models")+ theme_bw() 
 p2
 
-AUC_fin_table<- apply(AUC_fin,1,mean)
+AUC_fin_table<- as.data.frame(t(apply(AUC_data,2,mean)))
+names(AUC_fin_table)<- c("GJAM","GJAM2","PY1","PY2")
 formattable(AUC_fin_table)
 
-
-
-table<-data.frame()
-table<-data.frame("trace"=c(trace0,
-                            #trace1,
-                            trace2,trace3,trace4),
-                  "type"=c(rep("0",length(trace0)),
-                           #rep("1",length(trace1)),
-                           rep("2",length(trace2)),rep("3",length(trace3)),rep("4",length(trace4))),
-                  "x"=rep(1:it,4))
-
-
-gg_color_hue <- function(n) {
-  hues = seq(15, 375, length = n + 1)
-  hcl(h = hues, l = 65, c = 100)[1:n]
-}
-cols = gg_color_hue(4)
-
-#single traceplots - not useful
-# p1<-ggplot(table[which(table$type=="0"),], aes(x=table$x[which(table$type=="0")],y=table$trace[which(table$type=="0")]))+geom_point()
-# p1
-# p2<-ggplot(table[which(table$type=="1"),], aes(x=table$x[which(table$type=="1")],y=table$trace[which(table$type=="1")]))+geom_point()
-# p2
-# p3<-ggplot(table[which(table$type=="2"),], aes(x=table$x[which(table$type=="2")],y=table$trace[which(table$type=="2")]))+geom_point()
-# p3
-# p4<-ggplot(table[which(table$type=="3"),], aes(x=table$x[which(table$type=="3")],y=table$trace[which(table$type=="3")]))+geom_point()
-# p4
-
-# traceplots altogether
-p<-ggplot(table, aes(x=x,y=trace,col=as.factor(type)))+geom_point()+
+# AUC altogether
+p<-ggplot(AUC_fin, aes(x=species,y=value,col=as.factor(variable)))+geom_point()+
   scale_color_manual(name = c(""), values = cols, labels=c("Original model",
                                                            #"DP with prior on alpha 1",
                                                            "DP with prior on alpha 2","PY with fixed alpha, sigma","PY with prior on alpha, sigma"))+
-  labs(title="Traceplots of the posterior of the number of clusters")+xlab("iterations")+theme_bw()+geom_hline(yintercept = 16,color = "red")
+  labs(title="Traceplots of the posterior of the number of clusters")+xlab("Species")+theme_bw()
 #pdf("plot_forest_data/forest_data_trace_K.pdf")
 p
+#dev.off()
+
 
 
 
@@ -636,35 +797,133 @@ Tjur_fin<- melt(Tjur_data_df)
 
 p3<-ggplot(data=Tjur_fin)+geom_boxplot(aes(y=as.numeric(value),x=as.factor(variable),fill=as.factor(variable)))+
   scale_y_continuous(name="Tjur")+
-  scale_fill_discrete(name = "Models", labels = c("GJAM","GJAM2","PY1","PY2"))+theme_bw() + theme_bw()
+  scale_fill_discrete(name = "Models", labels = c("GJAM","GJAM2","PY1","PY2"))+xlab("Models") + theme_bw()
 p3
 
 
+Tjur_fin_table<- as.data.frame(t(apply(na.omit(Tjur_data),2,mean)))
+names(Tjur_fin_table)<- c("GJAM","GJAM2","PY1","PY2")
+formattable(Tjur_fin_table)
+########## Alpha plots ##################
+
+df_alpha <- data.frame(matrix(NA, nrow =it-burn, ncol =1))
+df_alpha$alpha<-fit2$chains$alpha.DP_g[(burn+1):it]
+df_alpha$type<- "posterior"
+#df_alpha_prior <- data.frame(matrix(NA, nrow =it-burn, ncol =1))
+#df_alpha_prior$alpha<- rgamma(it-burn, shape, rate)
+#alpha_seq= seq(min(alpha.chains[-c(1:burn)]),max(alpha.chains[-c(1:burn)]),length=it-burn)
+#df_alpha_prior$alpha <- dgamma(alpha_seq,rate,shape)
+
+#df_alpha_prior$type<- "prior"
+#df_alpha_all<- rbind(df_alpha[-1,],df_alpha_prior[-1,])
+###Compute mean
+mu <- ddply(df_alpha, "type", summarise, grp.mean=mean(alpha))
+mu1<- as.data.frame(alpha.DP)
+colnames(mu1)<- c("grp.mean")
+mu1$type<- "prior"
+mu<- rbind(mu, mu1)
+
+
+
+#pdf("Posterior_density_alphaT2.pdf")
+p_alpha_2<- ggplot(df_alpha, aes(x=alpha)) + geom_vline(data=mu, aes(xintercept=grp.mean, color=type),linetype="dashed")+
+  geom_density(color="red",adjust = 2)+labs(title=paste0("Posterior distribution for alpha")) +
+  theme_bw() + theme(axis.text.x = element_text(angle = 0, hjust = 1,size = 10), strip.text = element_text(size = 15),legend.position = "top", plot.title = element_text(hjust = 0.5))+
+  scale_color_manual(name = c("Legend"), values = c("prior"="#9999FF", "posterior"= "#FF6666"), labels=c("posterior mean","prior mean"))
+p_alpha_2
+#dev.off()
+
+
+
+
+
+df_alpha <- data.frame(matrix(NA, nrow =it-burn, ncol =1))
+df_alpha$alpha<- fit4$chains$alpha.PY_g[(burn+1):it]
+df_alpha$type<- "posterior"
+#df_alpha_prior <- data.frame(matrix(NA, nrow =it-burn, ncol =1))
+#df_alpha_prior$alpha<- rgamma(it-burn, shape, rate)
+#alpha_seq= seq(min(alpha.chains[-c(1:burn)]),max(alpha.chains[-c(1:burn)]),length=it-burn)
+#df_alpha_prior$alpha <- dgamma(alpha_seq,rate,shape)
+
+#df_alpha_prior$type<- "prior"
+#df_alpha_all<- rbind(df_alpha[-1,],df_alpha_prior[-1,])
+###Compute mean
+mu <- ddply(df_alpha, "type", summarise, grp.mean=mean(alpha))
+mu1<-as.data.frame(alpha.DP)
+colnames(mu1)<- c("grp.mean")
+mu1$type<- "prior"
+mu<- rbind(mu, mu1)
+
+
+
+#pdf("Posterior_density_alphaT1.pdf")
+p_alpha_2<- ggplot(df_alpha, aes(x=alpha)) + geom_vline(data=mu, aes(xintercept=grp.mean, color=type),linetype="dashed")+
+  geom_density(color="red",adjust = 1.2)+labs(title=paste0("Posterior distribution for alpha")) +
+  theme_bw() + theme(axis.text.x = element_text(angle = 0, hjust = 1,size = 10), strip.text = element_text(size = 15),legend.position = "top", plot.title = element_text(hjust = 0.5))+
+  scale_color_manual(name = c("Legend"), values = c("prior"="#9999FF", "posterior"= "#FF6666"), labels=c("posterior mean","prior mean"))
+p_alpha_2
+#dev.off()
+
+
+
+
+
+
+
+
+
+df_sigma <- data.frame(matrix(NA, nrow =it-burn, ncol =1))
+df_sigma$sigma<- fit4$chains$discount.PY_g[(burn+1):it]
+df_sigma$type<- "posterior"
+mu <- ddply(df_sigma, "type", summarise, grp.mean=mean(sigma))
+mu1<-as.data.frame(sigma_py)
+colnames(mu1)<- c("grp.mean")
+mu1$type<- "prior"
+mu<- rbind(mu, mu1)
+
+
+
+#pdf("Posterior_density_alphaT1.pdf")
+p_alpha_2<- ggplot(df_sigma, aes(x=sigma)) + geom_vline(data=mu, aes(xintercept=grp.mean, color=type),linetype="dashed")+
+  geom_density(color="red",adjust = 1.2)+labs(title=paste0("Posterior distribution for sigma")) +
+  theme_bw() + theme(axis.text.x = element_text(angle = 0, hjust = 1,size = 10), strip.text = element_text(size = 15),legend.position = "top", plot.title = element_text(hjust = 0.5))+
+  scale_color_manual(name = c("Legend"), values = c("prior"="#9999FF", "posterior"= "#FF6666"), labels=c("posterior mean","prior mean"))
+p_alpha_2
+#dev.off()
+
+
+
+pk_chains2_last<- mcmc(fit2$chains$pk_g[burn:it,ncol(fit2$chains$pk_g)])
+plot(pk_chains2_last)
+GJAM2_pk_last<- mean(pk_chains2_last)
+
+pk_chains3_last<- mcmc(fit3$chains$pk_g[burn:it,ncol(fit3$chains$pk_g)])
+plot(pk_chains3_last)
+PY1_pk_last<- mean(pk_chains3_last)
+
+pk_chains4_last<- mcmc(fit4$chains$pk_g[burn:it,ncol(fit4$chains$pk_g)])
+plot(pk_chains4_last)
+PY2_pk_last<- mean(pk_chains4_last)
+
 #################################################################################Other models
-##gjam3
-alpha<-mcmc(fit3$chains$alpha.PY_g)
-alpha<-mcmc(fit3$chains$alpha.PY_g[seq(1,length(fit3$chains$alpha.PY_g),by=20)])
-plot(alpha)
-acfplot(alpha)
-cumuplot(alpha)
-
-
-
-#gjam2
+##gjam2
 alpha<-mcmc(fit2$chains$alpha.DP_g)
-plot(alpha)
+#alpha<-mcmc(fit3$chains$alpha.PY_g[seq(1,length(fit3$chains$alpha.PY_g),by=20)])
+plot(alpha,main="alpha DP")
 acfplot(alpha)
 cumuplot(alpha)
+
+
 
 ##gjam4
 alpha<-mcmc(fit4$chains$alpha.PY_g)
-alpha<-mcmc(fit4$chains$alpha.PY_g[seq(1,length(fit4$chains$alpha.PY_g),by=20)])
-plot(alpha)
+#alpha<-mcmc(fit4$chains$alpha.PY_g[seq(1,length(fit4$chains$alpha.PY_g),by=20)])
+plot(alpha,main="alpha PY")
 acfplot(alpha)
 cumuplot(alpha)
 
 discount<-mcmc(fit4$chains$discount.PY_g)
-plot(discount)
+plot(discount,main="discount PY")
 acfplot(discount)
 cumuplot(discount)
 
@@ -680,14 +939,14 @@ gjam_mc4<- mcmc(fit4$chains$sgibbs)
 
 par(mfrow=c(2,3))
 hist(effectiveSize(gjam_mc), main="ess(sigma) gjam",lwd=2,col=gray(.6),breaks=100)
-hist(effectiveSize(gjam_mc1), main="ess(sigma) gjam1",lwd=2,col=gray(.6),breaks=100)
+#hist(effectiveSize(gjam_mc1), main="ess(sigma) gjam1",lwd=2,col=gray(.6),breaks=100)
 hist(effectiveSize(gjam_mc2), main="ess(sigma) gjam2",lwd=2,col=gray(.6),breaks=100)
 hist(effectiveSize(gjam_mc3), main="ess(sigma) gjam3",lwd=2,col=gray(.6),breaks=100)
 hist(effectiveSize(gjam_mc4), main="ess(sigma) gjam4",lwd=2,col=gray(.6),breaks=100)
 
 # for betas
 beta_mcmc<-mcmc(fit$chains$bgibbs)
-beta_mcmc1<-mcmc(fit1$chains$bgibbs)
+#beta_mcmc1<-mcmc(fit1$chains$bgibbs)
 beta_mcmc2<-mcmc(fit2$chains$bgibbs)
 beta_mcmc3<-mcmc(fit3$chains$bgibbs)
 beta_mcmc4<-mcmc(fit4$chains$bgibbs)
@@ -695,7 +954,7 @@ beta_mcmc4<-mcmc(fit4$chains$bgibbs)
 #nESS
 par(mfrow=c(2,3))
 hist(effectiveSize(beta_mcmc), main="ess(beta) gjam",lwd=2,col=gray(.6))
-hist(effectiveSize(beta_mcmc1), main="ess(beta) gjam1",lwd=2,col=gray(.6))
+#hist(effectiveSize(beta_mcmc1), main="ess(beta) gjam1",lwd=2,col=gray(.6))
 hist(effectiveSize(beta_mcmc2), main="ess(beta) gjam2",lwd=2,col=gray(.6))
 hist(effectiveSize(beta_mcmc3), main="ess(beta) gjam3",lwd=2,col=gray(.6))
 hist(effectiveSize(beta_mcmc4), main="ess(beta) gjam4",lwd=2,col=gray(.6))
@@ -725,17 +984,6 @@ gg_color_hue <- function(n) {
 }
 cols = gg_color_hue(4)
 
-#single traceplots - not useful
-# p1<-ggplot(table[which(table$type=="0"),], aes(x=table$x[which(table$type=="0")],y=table$trace[which(table$type=="0")]))+geom_point()
-# p1
-# p2<-ggplot(table[which(table$type=="1"),], aes(x=table$x[which(table$type=="1")],y=table$trace[which(table$type=="1")]))+geom_point()
-# p2
-# p3<-ggplot(table[which(table$type=="2"),], aes(x=table$x[which(table$type=="2")],y=table$trace[which(table$type=="2")]))+geom_point()
-# p3
-# p4<-ggplot(table[which(table$type=="3"),], aes(x=table$x[which(table$type=="3")],y=table$trace[which(table$type=="3")]))+geom_point()
-# p4
-
-# traceplots altogether
 p<-ggplot(table, aes(x=x,y=trace,col=as.factor(type)))+geom_point()+
   scale_color_manual(name = c(""), values = cols, labels=c("Original model",
                                                            #"DP with prior on alpha 1",
@@ -757,15 +1005,53 @@ plot(pk_chains3_last)
 pk_chains4_last<- mcmc(fit4$chains$pk_g[,ncol(fit4$chains$pk_g)])
 plot(pk_chains4_last)
 
-#Out of sample prediction
-#TJUR coefficient
 
 
-###Not applicable here. 
+# Final matrix
+form<-c(formula)
+Fin_all<-as.data.frame(matrix(NA,nrow=10,ncol=9))
+names(Fin_all)<- c("Parameter","GJAM","GJAM2","PY1","PY2","r", "iter", "burn","formula")
+Fin_all$iter<- it
+Fin_all$burn<- burn
+Fin_all$r<-5
+Fin_all$formula<-as.character(form)
+Fin_all[1,1]<- "DIC"
+Fin_all[1,2:5]<- c(fit$fit$DIC,fit2$fit$DIC,fit3$fit$DIC,fit4$fit$DIC)/100000
+Fin_all[2,1]<- "mean AUC"
+Fin_all[2,2:5]<- AUC_fin_table
+Fin_all[3,1]<- "mean Tjur"
+Fin_all[3,2:5]<- Tjur_fin_table
+Fin_all[4,1]<- "mean p_N"
+Fin_all[4,2:5]<- c(0,GJAM2_pk_last,PY1_pk_last,PY2_pk_last)
 
-#sum((fit$prediction$ypredMu[1:100,]-Ydata[1:100,])^2)/sum(treeYdata[1:100,]^2) #0.5987808
-#sum((fit1$prediction$ypredMu[1:100,]-treeYdata[1:100,])^2)/sum(treeYdata[1:100,]^2) #0.5961853
-#sum((fit2$prediction$ypredMu[1:100,]-treeYdata[1:100,])^2)/sum(treeYdata[1:100,]^2) #0.5979932
-#sum((fit3$prediction$ypredMu[1:100,]-treeYdata[1:100,])^2)/sum(treeYdata[1:100,]^2) #0.5977189
-#sum((fit4$prediction$ypredMu[1:100,]-treeYdata[1:100,])^2)/sum(treeYdata[1:100,]^2) #0.5983279
+Fin_all[5,1]<- "VI dist"
+Fin_all[5,2:5]<- VI_D_fin_table
+Fin_all[6,1]<- "AR dist"
+Fin_all[6,2:5]<- Ar_D_fin_table
+Fin_all[,2:5]<- round(Fin_all[,2:5], 3)
+write.csv(Fin_all, file = "Fin_10k_1.csv")
 
+grid.newpage()
+grid.table(Fin_all[1:6,1:8])
+grid.newpage()
+###Sensitivity table
+
+
+grid.table(fit$parameters$sensTable)
+grid.newpage()
+grid.table(fit2$parameters$sensTable)
+grid.newpage()
+grid.table(fit3$parameters$sensTable)
+grid.newpage()
+grid.table(fit4$parameters$sensTable)
+grid.newpage()
+
+grid.table(fit$inputs$designTable)
+grid.newpage()
+grid.table(fit2$inputs$designTable)
+grid.newpage()
+grid.table(fit3$inputs$designTable)
+grid.newpage()
+grid.table(fit4$inputs$designTable)
+grid.newpage()
+dev.off()
