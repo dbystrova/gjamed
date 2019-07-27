@@ -13,7 +13,7 @@ library(rgdal)
 library(biomod2)
 library(AUC)
 library(formattable)
-library(mcclust.ext)
+#library(mcclust.ext)
 library(reshape2)
 library(plyr)
 library(dplyr)
@@ -33,7 +33,7 @@ load_object <- function(file) {
   tmp[[ls(tmp)[1]]]
 }
 
-pdf("plot_forest_data/Bauges_data_all_10K.pdf")
+pdf("Bauges_data_all_10K_pca.pdf")
 #setwd("~/Downloads/RFate-master/data_supplements/Bauges")
 
 
@@ -45,7 +45,7 @@ PA_data<-load_object("DOM.mat.sites.species.PA.RData")
 AB_data<-load_object("DOM.mat.sites.species.abund.RData")
 
 
-pdf("Bagues_10_k.pdf")
+#pdf("Bagues_10_kr10.pdf")
 
 ### Colnames PA vs AB
 S_PA<- colnames(PA_data)
@@ -116,14 +116,72 @@ B_env_1<- B_env[!NAs_values,]
 zeros_values<- (B_env_1$bio_1_0==0)&(B_env_1$bio_12_0==0)&(B_env_1$bio_19_0==0)&(B_env_1$bio_8_0==0)&(B_env_1$slope==0)
 B_env_2<- B_env_1[!zeros_values,]
 
+
+
+
+
+
+
+
+rasmask = raster("MASK_100m.tif")
+# File to environmental data rasteres
+file.env = "ENV_VARIABLES/EOBS_1970_2005"
+# 1) Get all the environmental variables in a single raster stack. So that you can extract them all afterwards.
+env.bauges = stack(list.files(file.env,full.names = T))
+
+# 1.a) set the projection same as the MASK
+env.bauges = projectRaster(env.bauges, rasmask, res=100, method = "ngb")
+
+# 1.b) Get only the values within MASK
+env.bauges = mask(env.bauges, rasmask, maskvalue=0)
+
+
+B_env_new<-as.data.frame(extract(env.bauges, B_coords_xy))
+B_env_new$cite<- rownames(B_coords_xy)
+
+
+##Delete 0 values and NA's for B_env_new
+B_env_new2<- B_env_new[,c("cite","bio_1_0","bio_12_0","bio_19_0","bio_8_0","slope")]
+NAs_values<- is.na(B_env_new2$bio_1_0)&is.na(B_env_new2$bio_12_0)&is.na(B_env_new2$bio_19_0)&is.na(B_env_new2$bio_8_0)&is.na(B_env_new2$slope)
+B_env_new3<- B_env_new2[!NAs_values,]
+zeros_values<- (B_env_new3$bio_1_0==0)&(B_env_new3$bio_12_0==0)&(B_env_new3$bio_19_0==0)&(B_env_new3$bio_8_0==0)&(B_env_new3$slope==0)
+B_env_new4<- B_env_new3[!zeros_values,]
+
 ####### Merge with presence_absence by cite
-PA_env_df <- merge(B_env_2,PA_data_df,by="cite")
 
-summary(PA_env_df)
+PA_env_df2 <- merge(B_env_new4,PA_data_df,by="cite")
+#summary(PA_env_df2)
 
-AB_env_df <- merge(B_env_2,AB_data_df,by="cite")
-summary(AB_env_df)
+AB_env_df2 <- merge(B_env_new4,AB_data_df,by="cite")
+#summary(AB_env_df2)
 
+
+### merge environmental covariates and presence/abscence data by cite.
+#PA_env_df <- merge(B_env,PA_data_df,by="cite")
+## delete cites with NA for environment
+#NAs_values<- is.na(PA_env_df$bio_1_0)&is.na(PA_env_df$bio_12_0)&is.na(PA_env_df$bio_19_0)&is.na(PA_env_df$bio_8_0)&is.na(PA_env_df$slope)
+#PA_env_df_1<- PA_env_df[!NAs_values,]
+###  delete total 0 for environment
+#zeros_values<- (PA_env_df_1$bio_1_0==0)&(PA_env_df_1$bio_12_0==0)&(PA_env_df_1$bio_19_0==0)&(PA_env_df_1$bio_8_0==0)&(PA_env_df_1$slope==0)
+#PA_env_df_2<- PA_env_df_1[!zeros_values,]
+
+## non missing data sets
+#PA_non_miss_env<- PA_env_df_2[!apply(is.na(PA_env_df_2[,7:131]),1,any),]
+#PA_non_na_env<- PA_env_df_2[!apply(is.na(PA_env_df_2[,7:131]),1,all),]
+
+#### Keeping PA data with at least one 1/0
+PA_env_df_3<- PA_env_df2[which(!(rowSums(is.na(PA_env_df2[,7:131]))==125)),]
+
+
+
+####### Merge with presence_absence by cite
+# PA_env_df <- merge(B_env_2,PA_data_df,by="cite")
+# 
+# summary(PA_env_df)
+# 
+# AB_env_df <- merge(B_env_2,AB_data_df,by="cite")
+# summary(AB_env_df)
+# 
 
 
 
@@ -141,21 +199,21 @@ summary(AB_env_df)
 #PA_non_na_env<- PA_env_df_2[!apply(is.na(PA_env_df_2[,7:131]),1,all),]
 
 #### Keeping PA data with at least one 1/0
-PA_env_df_3<- PA_env_df[which(!(rowSums(is.na(PA_env_df[,7:131]))==125)),]
+#PA_env_df_3<- PA_env_df[which(!(rowSums(is.na(PA_env_df[,7:131]))==125)),]
 
 
 #summary(PA_env_df_3)
-L1<- sapply(PA_env_df, function(x) sum(is.na(x)))
-summary(L1)
-L2<- sapply(AB_env_df, function(x) sum(is.na(x)))
-summary(L2)
-
-
-S<- apply(PA_env_df_3, 1, function(x) nchar(x[1]))
-S2<- apply(AB_env_df, 1, function(x) nchar(x[1]))
-
-summary(S)
-summary(S2)
+# L1<- sapply(PA_env_df, function(x) sum(is.na(x)))
+# summary(L1)
+# L2<- sapply(AB_env_df, function(x) sum(is.na(x)))
+# summary(L2)
+# 
+# 
+# S<- apply(PA_env_df_3, 1, function(x) nchar(x[1]))
+# S2<- apply(AB_env_df, 1, function(x) nchar(x[1]))
+# 
+# summary(S)
+# summary(S2)
 
 
 ###Convert from NA to 0
@@ -180,7 +238,7 @@ summary(S2)
 ## dim(train)  / 3712  131
 ## dim(test)  /  1591  131
 
-env_data<- AB_env_df[,1:6]
+env_data<- AB_env_df2[,1:6]
 ###duplicates
 #duplicated_env<- env_data[,2:6] %>% duplicated()
 #env_data_nodup<- env_data[!duplicated_env,]
@@ -190,7 +248,7 @@ env_data_norm<- cbind(env_data[,1],env_data_n )
 names(env_data_norm)<- c("cite", names(env_data_n))
 
 #### Using abundance 
-Ydat<- AB_env_df[,c(1,7:130)]
+Ydat<- AB_env_df2[,c(1,7:130)]
 Ydat_num<- Ydat[,2:125]
 Ydat_num[Ydat_num> 0] <- 1
 Ydat[,2:125]<- Ydat_num
@@ -210,20 +268,38 @@ true_names$K_n<- 1:16
 Species_names_groups_num<- merge(Species_names_groups,true_names, by="PFG" )
 
 
-
+save(AB_norm_PA, file = "data__norm_pca.Rds")
 
 #############################################################################Fitting the model 
 
-data<- AB_norm_PA
+###################PCA
 
+###PCA 
+xnew<- prcomp(AB_norm_PA[,2:6])
+xdata_pca<- as.data.frame(xnew$x[,1:2])
+eigs <- xnew$sdev^2
+eigs[1] / sum(eigs) +eigs[2] / sum(eigs)
+
+
+
+
+
+
+
+
+
+#data<- AB_norm_PA
+data_y<- AB_norm_PA[,c(1,7:ncol(AB_norm_PA))]
+data_x<- xdata_pca
+data<- cbind(data_x,data_y)
 set.seed(123)
 smp_size <- floor(0.70 * nrow(data))
 train_ind <- sample(seq_len(nrow(data)), size = smp_size)
 
 train <- data[train_ind, ]
 test <- data[-train_ind, ]
-save(train, file = "sample_data_train4.Rds")
-save(test, file = "sample_data_test4.Rds")
+save(train, file = "sample_data_train_pca.Rds")
+save(test, file = "sample_data_test_pca.Rds")
 
 
 
@@ -233,23 +309,10 @@ burn<-5000
 holdout<- sample(seq_len(nrow(train)), size = 100)
 
 
-###################PCA
-xdata_init<- data[,2:6]
-#
-##Normalization
-#scaled.data <- as.data.frame(scale(xdata_init))
-scaled.data<- xdata_init
-
-###PCA 
-xnew<- prcomp(scaled.data)
-xdata_pca<- as.data.frame(xnew$x[,1:2])
-eigs <- xnew$sdev^2
-eigs[1] / sum(eigs) +eigs[2] / sum(eigs)
-
 ##########GJAM standart model
-y<- train[,7:130]
+y<- train[,4:ncol(data)]
 #xdata<- xdata_pca[train_ind,]
-xdata<- train[,2:6]
+xdata<- train[,1:2]
 
 
 
@@ -315,12 +378,12 @@ names(N_occur2)<- c("species","Abs","Pres","NA","Group2")
 
 
 
-#formula <- as.formula( ~ PC1 +  PC2 + I(PC1^2)+  I(PC2^2))
+formula <- as.formula( ~ PC1 +  PC2 + I(PC1^2)+  I(PC2^2))
 #temp*deficit + I(temp^2) + I(deficit^2) 
-formula <- as.formula( ~   bio_19_0  + slope + I(bio_19_0^2) + I(slope^2) )
+#formula <- as.formula( ~   bio_12_0  + slope + I(bio_12_0^2) + I(slope^2) )
 Ydata  <- gjamTrimY(y,10)$y             # at least 10 plots - re-group rare species
 S<- ncol(Ydata)
-rl <- list(r =10, N = S)
+rl <- list(r =5, N = S)
 ml   <- list(ng = it, burnin = burn, typeNames = 'PA', reductList = rl,PREDICTX = F) #change ml
 fit<-gjam(formula, xdata = xdata, ydata = Ydata, modelList = ml)
 
@@ -329,9 +392,9 @@ fit<-gjam(formula, xdata = xdata, ydata = Ydata, modelList = ml)
 x <- model.matrix(formula, xdata)
 qr(x)$rank
 
-#save(fit,file="models_Bagues_data_OSS/fit.Rda")
+#save(fit,file="models_Bagues_data_OSS/fit_pca.Rda")
 #save(fit,file="models_Bagues_data_OSS/fit_2.Rda")
-#save(fit,file="models_Bagues_data_OSS/fit_3.Rda")
+#save(fit,file="models_Bagues_data_OSS/fit_4.Rda")
 
 #no Holdout
 
@@ -340,7 +403,7 @@ qr(x)$rank
 Ykeep<- as.vector(colnames(Ydata))
 y_test<- test[,c(Ykeep[1:(ncol(Ydata)-1)])]
 #xdata_test<- test[,2:6]
-xdata_test<- test[,2:6]
+xdata_test<- test[,1:2]
 #save(xdata_test, file = "sample_data_test_pca.Rds")
 
 
@@ -359,7 +422,7 @@ for(i in 1:ncol(y_test)){
 
 mean(AUC_GJAM)
 
-
+####### Tjur
 
 Tjur_GJAM<-vector()
 
@@ -373,19 +436,6 @@ for(k in 1:ncol(y_test)){
 
 
 mean(na.omit(Tjur_GJAM))
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 ############################################
 ####Check the trace for number of groups. From the previous analysis we know that the number of functional groups is 16
@@ -428,8 +478,8 @@ rl2  <- list(r = 10, N = S,rate=rate,shape=shape,V=1) #here to modify N
 ml2   <- list(ng = it, burnin = burn, typeNames = 'PA', reductList = rl2,PREDICTX = F) #change ml
 
 fit2<-.gjam_2(formula, xdata = xdata, ydata = Ydata, modelList = ml2)
-#save(fit2,file="models_Bagues_data_OSS/fit2_3.Rda")
-#fit2<- load_object("models_Bagues_data_OSS/fit2_2.Rda")
+#save(fit2,file="models_Bagues_data_OSS/fit2_pca.Rda")
+#fit2_test<- load_object("models_Bagues_data_OSS/fit2_3.Rda")
 
 
 new <- list(xdata =xdata_test,  nsim = 1000) # effort unchanged 
@@ -490,7 +540,7 @@ funcPY_root<-function(x) {(x/sigma_py)*(prod((x+sigma_py+c(1:S) -1)/(x+c(1:S) -1
 alpha.PY<-.bisec(funcPY_root,0.0001,100)
 alpha.PY_1<- alpha.PY
 N_eps<-floor(.compute_tau_mean_large_dim(sigma_py,alpha.PY,eps) + 2*.compute_tau_var_large_dim(sigma_py,alpha.PY,eps))
-rl3   <- list(r = 10, N = N_eps, sigma_py=sigma_py, alpha=alpha.PY)
+rl3   <- list(r = 5, N = N_eps, sigma_py=sigma_py, alpha=alpha.PY)
 ml3   <- list(ng = it, burnin = burn, typeNames = 'PA', reductList = rl3,PREDICTX = F)
 
 
@@ -498,8 +548,8 @@ fit3 <- .gjam_3(formula,xdata,Ydata,ml3)
 
 
 
-#save(fit3,file="models_Bagues_data_OSS/fit3.Rda")
-#save(fit3,file="models_Bagues_data_OSS/fit3_3.Rda")
+#save(fit3,file="models_Bagues_data_OSS/fit3_pca.Rda")
+#save(fit3,file="models_Bagues_data_OSS/fit3_4.Rda")
 
 #fit3<- load_object("models_Bagues_data_OSS/fit3.Rda")
 
@@ -596,14 +646,14 @@ alpha.max_val<-5
 sigma_py_max<-0.5
 N_eps<-floor(.compute_tau_mean_large_dim(sigma_py_max,alpha.max_val,eps) + 2*.compute_tau_var_large_dim(sigma_py_max,alpha.max_val,eps))
 
-rl4   <- list(r = 10, N =N_eps,rate=rate,shape=shape,V1=1,ro.disc=ro.disc) #here to modify N
+rl4   <- list(r = 5, N =N_eps,rate=rate,shape=shape,V1=1,ro.disc=ro.disc) #here to modify N
 ml4   <- list(ng = it, burnin = burn, typeNames = 'PA', reductList = rl4,PREDICTX = F)
 
 fit4<-.gjam_4(formula, xdata = xdata, ydata = Ydata, modelList = ml4)
-#fit4<- load_object("models_Bagues_data_OSS/fit4.Rda")
+#fit4<- load_object("models_Bagues_data_OSS/fit4_pca.Rda")
 
 
-#save(fit4,file="models_Bagues_data_OSS/fit4_3.Rda")
+#save(fit4,file="models_Bagues_data_OSS/fit4_pca.Rda")
 
 
 new <- list(xdata =xdata_test,  nsim = 1000) # effort unchanged 
@@ -669,13 +719,7 @@ True_clust<- merge(Species_names_groups_num,True_clustering, by="CODE_CBNA")
 #True_clust<- True_clust[order(True_clust$CODE_CBNA),]
 
 
-
-n <- ncol(Mat_new)
-M <- nrow(Mat_new)
-
-if(sum(Mat_new %in% (1:n)) < n * M){
-  stop("All elements of cls must be integers in 1:nobs")
-}   
+Mat<- fit4$chains$kgibbs[(burn+1):it,]
 
 Mat_new<- matrix(NA, nrow=nrow(Mat),ncol=ncol(Mat))
 
@@ -697,7 +741,7 @@ tr_cl<-True_clust$K_n
 CM_DP1<- comp.psm(fit$chains$kgibbs[(burn+1):it,])
 CM_DP2<- comp.psm(fit2$chains$kgibbs[(burn+1):it,])
 CM_PY1<- comp.psm(fit3$chains$kgibbs[(burn+1):it,])
-CM_PY2<- comp.psm(Mat_new[(burn+1):it,])
+CM_PY2<- comp.psm(Mat_new)
 
 
 
@@ -719,7 +763,7 @@ Ar_D_PY1<-arandi(mbind_PY1$cl[1:120], tr_cl)
 Ar_D_PY2<-arandi(mbind_PY2$cl[1:120], tr_cl)
 Ar_D_fin_table<- as.data.frame(t(c(Ar_D_DP1,Ar_D_DP2,Ar_D_PY1,Ar_D_PY2)))
 names(Ar_D_fin_table)<- c("GJAM","GJAM2","PY1","PY2")
-formattable(Ar_D_fin_table)
+#formattable(Ar_D_fin_table)
 
 
 vi.dist_DP1<- vi.dist(mbind_DP1$cl[1:120], tr_cl)
@@ -728,7 +772,7 @@ vi.dist_PY1<- vi.dist(mbind_PY1$cl[1:120], tr_cl)
 vi.dist_PY2<- vi.dist(mbind_PY2$cl[1:120], tr_cl)
 VI_D_fin_table<- as.data.frame(t(c(vi.dist_DP1,vi.dist_DP2,vi.dist_PY1,vi.dist_PY2)))
 names(VI_D_fin_table)<- c("GJAM","GJAM2","PY1","PY2")
-formattable(VI_D_fin_table)
+#formattable(VI_D_fin_table)
 
 
 
@@ -754,7 +798,7 @@ AUC_data[,4]<- AUC_PY2
 AUC_data_df<- as.data.frame(AUC_data)
 names(AUC_data_df)<- c("GJAM","GJAM2","PY1","PY2")
 #names(AUC_data_df)<- c("GJAM","GJAM2")
-AUC_data_df$species<- colnames(y_test)[1:ncol(y_test)-1]
+AUC_data_df$species<- colnames(y_test)[1:ncol(y_test)]
 AUC_fin<- melt(AUC_data_df)
 AUC_fin<- merge(AUC_fin,N_occur,by="species")
 AUC_fin<- merge(AUC_fin,N_occur2[,c("species","Group2")],by="species")
@@ -765,9 +809,16 @@ p2<-ggplot(data=AUC_fin)+geom_boxplot(aes(y=as.numeric(value),x=as.factor(variab
   scale_fill_discrete(name = "Models", labels = c("GJAM","GJAM2","PY1","PY2"))+xlab("Models")+ theme_bw() 
 p2
 
+
+p2<-ggplot(data=AUC_fin)+geom_boxplot(aes(y=as.numeric(value),x=as.factor(variable),fill=as.factor(variable)))+
+  scale_y_continuous(name="AUC")+
+  scale_fill_discrete(name = "Models", labels = c("GJAM","GJAM2","PY1","PY2"))+xlab("Models")+ theme_bw() 
+p2
+
+
 AUC_fin_table<- as.data.frame(t(apply(AUC_data,2,mean)))
 names(AUC_fin_table)<- c("GJAM","GJAM2","PY1","PY2")
-formattable(AUC_fin_table)
+#formattable(AUC_fin_table)
 
 # AUC altogether
 p<-ggplot(AUC_fin, aes(x=species,y=value,col=as.factor(variable)))+geom_point()+
@@ -803,7 +854,7 @@ p3
 
 Tjur_fin_table<- as.data.frame(t(apply(na.omit(Tjur_data),2,mean)))
 names(Tjur_fin_table)<- c("GJAM","GJAM2","PY1","PY2")
-formattable(Tjur_fin_table)
+#formattable(Tjur_fin_table)
 ########## Alpha plots ##################
 
 df_alpha <- data.frame(matrix(NA, nrow =it-burn, ncol =1))
@@ -858,7 +909,7 @@ mu<- rbind(mu, mu1)
 
 #pdf("Posterior_density_alphaT1.pdf")
 p_alpha_2<- ggplot(df_alpha, aes(x=alpha)) + geom_vline(data=mu, aes(xintercept=grp.mean, color=type),linetype="dashed")+
-  geom_density(color="red",adjust = 1.2)+labs(title=paste0("Posterior distribution for alpha")) +
+  geom_density(color="red",adjust = 3)+labs(title=paste0("Posterior distribution for alpha")) +
   theme_bw() + theme(axis.text.x = element_text(angle = 0, hjust = 1,size = 10), strip.text = element_text(size = 15),legend.position = "top", plot.title = element_text(hjust = 0.5))+
   scale_color_manual(name = c("Legend"), values = c("prior"="#9999FF", "posterior"= "#FF6666"), labels=c("posterior mean","prior mean"))
 p_alpha_2
@@ -984,11 +1035,13 @@ gg_color_hue <- function(n) {
 }
 cols = gg_color_hue(4)
 
+#pdf("Bauges_data_all_trace_pca.pdf")
+
 p<-ggplot(table, aes(x=x,y=trace,col=as.factor(type)))+geom_point()+
   scale_color_manual(name = c(""), values = cols, labels=c("Original model",
                                                            #"DP with prior on alpha 1",
                                                            "DP with prior on alpha 2","PY with fixed alpha, sigma","PY with prior on alpha, sigma"))+
-  labs(title="Traceplots of the posterior of the number of clusters")+xlab("iterations")+theme_bw()+geom_hline(yintercept = 16,color = "red")
+  labs(title="Traceplots of the posterior of the number of clusters")+xlab("iterations")+ylab("Number of clusters") +theme_bw()+geom_hline(yintercept = 16,color = "red")
 #pdf("plot_forest_data/forest_data_trace_K.pdf")
 p
 #dev.off()
@@ -1028,11 +1081,14 @@ Fin_all[5,1]<- "VI dist"
 Fin_all[5,2:5]<- VI_D_fin_table
 Fin_all[6,1]<- "AR dist"
 Fin_all[6,2:5]<- Ar_D_fin_table
+Fin_all[7,1]<- "mean K"
+Fin_all[7,2:5]<- c(mean(trace0[burn:it]),mean(trace2[burn:it]),mean(trace3[burn:it]),mean(trace4[burn:it]))
 Fin_all[,2:5]<- round(Fin_all[,2:5], 3)
-write.csv(Fin_all, file = "Fin_10k_1.csv")
+
+write.csv(Fin_all, file = "Fin_10k_pca.csv")
 
 grid.newpage()
-grid.table(Fin_all[1:6,1:8])
+grid.table(Fin_all[1:7,1:8])
 grid.newpage()
 ###Sensitivity table
 

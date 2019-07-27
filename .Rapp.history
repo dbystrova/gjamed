@@ -1,1 +1,2 @@
 load("/Users/dariabystrova/Documents/GitHub/gjamed/Sim_smallS_gjam0.Rda")
+load("/Users/dariabystrova/Documents/GitHub/gjamed/sample_data_test5.Rds")
