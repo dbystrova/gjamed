@@ -1,5 +1,5 @@
 rm(list=ls())
-setwd("~/Tesi/Code/modified_gjam/Gjam/")
+#setwd("~/Tesi/Code/modified_gjam/Gjam/")
 library(repmis)
 library(gjam)
 library(MASS)
@@ -20,6 +20,15 @@ d <- "https://github.com/jimclarkatduke/gjam/blob/master/forestTraits.RData?raw=
 source_data(d)
 xdata <- forestTraits$xdata[,c(1,2,8)]
 
+set.seed(123)
+train_ind <- sample(seq_len(nrow(data)), size = smp_size)
+
+
+
+#train <- data[train_ind, ]
+#test <- data[-train_ind, ]
+## dim(train)  / 3712  131
+## dim(test)  /  1591  131
 
 
 formula <- as.formula( ~ temp*deficit + I(temp^2) + I(deficit^2) )
@@ -48,6 +57,14 @@ fit1<-.gjam_1(form, xdata = xdata, ydata = treeYdata, modelList = ml1)
 fit2<-.gjam_2(form, xdata = xdata, ydata = treeYdata, modelList = ml2)
 fit3 <- .gjam_3(form,xdata,treeYdata,ml3)
 fit4<-.gjam_4(form, xdata = xdata, ydata = treeYdata, modelList = ml4)
+
+
+
+
+
+
+
+
 
 fit$fit$rmspeAll
 fit4$fit$rmspeAll

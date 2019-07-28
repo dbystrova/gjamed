@@ -10,11 +10,67 @@ load_object <- function(file) {
 library(ggplot2)
 #setwd("/mnt/beegfs/mistis/dbystrov/Gjammod")
 setwd("/Users/dariabystrova/Documents/GitHub/gjamed")
-Ltgj0<- load_object( "smallnODSim_smallS100K4_gjam0.Rda")
-LtT1<-load_object("smallnODSim_smallS100K4_type1.Rda")
-LtT2<-load_object("smallnODSim_smallS100K4_type2.Rda")
-LtT3<-load_object("smallnODSim_smallS100K4_type3.Rda")
-LtT4<-load_object("smallnODSim_smallS100K4_type4.Rda")
+Ltgj0<- load_object( "smallnODSim_smallS300K4_gjam0.Rda")
+LtT1<-load_object("smallnODSim_smallS300K4_type1.Rda")
+LtT2<-load_object("smallnODSim_smallS300K4_type2.Rda")
+LtT3<-load_object("smallnODSim_smallS300K4_type3.Rda")
+LtT4<-load_object("smallnODSim_smallS300K4_type4.Rda")
+
+
+
+
+trace0<-Ltgj0$S_300_r_5_N_150_n_500_K_4$S_300_q_20n_10_K_4_l1$trace
+trace1<-LtT1$S_300_r_5_N_150_n_500_K4$S_300_q_20n_10_K_4_l1$trace
+trace2<-LtT2$S_300_r_5_N_150_n_500_K4$S_300_q_20n_10_K_4_l1$trace
+trace3<-LtT3$S_300_r_5_N_150_n_500_K4$S_300_q_20n_10_K_4_l1$trace
+trace4<-LtT4$S_300_r_5_N_150_n_10_K4$S_300_q_20n_10_K_4_l1$trace
+
+
+#check the traceplots of K
+trace0<-apply(Ltgj0$chains$kgibbs,1,function(x) length(unique(x)))
+trace1<-apply(LtT1$chains$kgibbs,1,function(x) length(unique(x)))
+trace2<-apply(LtT2$chains$kgibbs,1,function(x) length(unique(x)))
+trace3<-apply(LtT3$chains$kgibbs,1,function(x) length(unique(x)))
+trace4<-apply(LtT4$chains$kgibbs,1,function(x) length(unique(x)))
+
+
+
+table<-data.frame()
+table<-data.frame("trace"=c(trace0,
+                            #trace1,
+                            trace2,trace3,trace4),
+                  "type"=c(rep("0",length(trace0)),
+                           #rep("1",length(trace1)),
+                           rep("2",length(trace2)),rep("3",length(trace3)),rep("4",length(trace4))),
+                  "x"=rep(1:it,4))
+
+
+gg_color_hue <- function(n) {
+  hues = seq(15, 375, length = n + 1)
+  hcl(h = hues, l = 65, c = 100)[1:n]
+}
+cols = gg_color_hue(4)
+
+p<-ggplot(table, aes(x=x,y=trace,col=as.factor(type)))+geom_point()+
+  scale_color_manual(name = c(""), values = cols, labels=c("Original model",
+                                                           #"DP with prior on alpha 1",
+                                                           "DP with prior on alpha 2","PY with fixed alpha, sigma","PY with prior on alpha, sigma"))+
+  labs(title="Traceplots of the posterior of the number of clusters")+xlab("iterations")+theme_bw()+geom_hline(yintercept = 4,color = "red")
+
+
+pdf("simulation_data_trace_KS300.pdf")
+
+
+p
+
+
+dev.off()
+
+
+
+
+
+
 
 
 S_vec<-c(100)
