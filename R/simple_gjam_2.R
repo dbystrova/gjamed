@@ -20,7 +20,7 @@
   
   ematAlpha <- .5
   
-  alpha.DP <- 1
+  alpha.DP <- 1 #initial point for alpha
   
   for(k in 1:length(modelList)) assign( names(modelList)[k], modelList[[k]] )
   
@@ -207,6 +207,9 @@
   }
   
   #impose dimension reduction even if we don't want it (or it fixes it to the one we want)
+  ##
+  !!!!!!!!!!!!!!!!!!
+  ##
   reductList <- .setupReduct(modelList, S, Q, n) ##########
   N <- reductList$N
   r <- reductList$r
@@ -408,6 +411,10 @@
   yp <- y
   wmax <- ymax <- apply(y,2,max)
   wmax <- wmax/effMat #??
+  
+  
+  # !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+  
   
   if(REDUCT){
     cat( paste('\nDimension reduced from',S,'X',S,'->',N,'X',r,'responses\n') )
@@ -1823,7 +1830,7 @@
     #pvec <- .sampleP(N=N, avec=rep(1,(N-1)),
     #                bvec=rep(alpha.DP,(N-1)), K=K)
     
-    alpha.DP<-metrop_DP(theta=alpha.DP,pvec=pvec,lik.fun=lik.fun,N=N,rate=rate,shape=shape,V=V)
+    alpha.DP<-metrop_DP(theta=alpha.DP, pvec=pvec,lik.fun= lik.alpha.DP.fun,N=N,rate=rate,shape=shape,V=V)
     
   }
   
@@ -1832,7 +1839,7 @@
 } 
 
 
-lik.fun<-function(alpha,pvec,N,shape,rate){
+lik.alpha.DP.fun<-function(alpha,pvec,N,shape,rate){
   
   tmp<-log(gamma(alpha)) - N*log(gamma(alpha/N)) + sum(((alpha/N)-1)*log(pvec)) + (shape-1)*log(alpha) - rate*alpha
   
