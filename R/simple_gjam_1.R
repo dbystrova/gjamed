@@ -834,7 +834,7 @@
       sgibbs[g,]          <- as.vector(otherpar$Z)
       sigErrGibbs[g]      <- sigmaerror
       alpha.DP_g[g]       <- otherpar$alpha.DP
-      pk_g[g,]              <-otherpar$pvec
+      pk_g[g,]            <-otherpar$pvec
       
       if(length(corCols) > 0){
         if(max(diag(sg)[corCols]) > 5){  #overfitting covariance
